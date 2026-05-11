@@ -2,12 +2,6 @@ import React from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { authStore } from './authStore'
 
-/**
- * Usage:
- * <AuthGuard requireAuth>
- *   ...
- * </AuthGuard>
- */
 const AuthGuard = ({ children, requireAuth = false, requireAdmin = false }) => {
   const location = useLocation()
 
@@ -24,7 +18,7 @@ const AuthGuard = ({ children, requireAuth = false, requireAdmin = false }) => {
   if (requireAdmin && !authStore.isAdmin()) {
     return (
       <Navigate
-        to="/"
+        to="/login"
         replace
       />
     )
