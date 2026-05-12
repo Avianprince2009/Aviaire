@@ -12,48 +12,97 @@ import Footer from './components/Footer.jsx'
 import Register from './pages/Register.jsx'
 import Cart from './pages/Cart.jsx'
 import Admin from './pages/AdminDashboard.jsx'
-import AuthGuard from './auth/AuthGuard'
+import AuthGuard from './auth/AuthGuard.jsx'
 
 const SEED_PRODUCTS = [
   {
     id: 1,
-    name: "Rolex Submariner",
-    description: "A timeless diver’s icon with enduring character.",
+    name: 'Rolex Submariner',
+    description: 'A timeless diver’s icon with enduring character.',
     price: 12500,
-    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80",
-    brand: "Rolex",
-    category: "Diver",
-    badge: "Signature",
+    imageUrl:
+      'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
+    collection: 'rolex',
+    badge: 'Signature',
   },
   {
     id: 2,
-    name: "G-Shock Chronograph",
-    description: "Sport-ready precision built for everyday resilience.",
+    name: 'Omega Seamaster',
+    description: 'Sport-ready precision built for everyday resilience.',
     price: 980,
-    image: "https://images.unsplash.com/photo-1502741338009-cac2772e18bc?auto=format&fit=crop&w=800&q=80",
-    brand: "G-Shock",
-    category: "Sport",
-    badge: "New",
+    imageUrl:
+      'https://images.unsplash.com/photo-1502741338009-cac2772e18bc?auto=format&fit=crop&w=800&q=80',
+    collection: 'omega',
+    badge: 'New',
   },
   {
     id: 3,
-    name: "L’ALLURE Atelier Watch",
-    description: "A discreet statement crafted for collectors.",
+    name: 'Patek Philippe Calatrava',
+    description: 'A discreet statement crafted for collectors.',
     price: 3200,
-    image: "https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?auto=format&fit=crop&w=800&q=80",
-    brand: "L’ALLURE",
-    category: "Atelier",
-    badge: "Limited",
+    imageUrl:
+      'https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?auto=format&fit=crop&w=800&q=80',
+    collection: 'patek-philippe',
+    badge: 'Limited',
   },
 ]
+
+function normalizeProduct(p) {
+  if (!p || typeof p !== 'object') return p
+
+  // If already normalized, just return.
+  if ('imageUrl' in p && 'collection' in p) return p
+
+  const collection =
+    p.collection ||
+    p.category ||
+    (p.brand
+      ? p.brand.toLowerCase().includes('patek')
+        ? 'patek-philippe'
+        : p.brand.toLowerCase().includes('audemars')
+          ? 'audemars-piguet'
+          : p.brand.toLowerCase().includes('omega')
+            ? 'omega'
+            : p.brand.toLowerCase().includes('cartier')
+              ? 'cartier'
+              : p.brand.toLowerCase().includes('rolex')
+                ? 'rolex'
+                : undefined
+      : undefined)
+
+  const imageUrl = p.imageUrl || p.image
+
+  return {
+    ...p,
+    collection,
+    imageUrl,
+  }
+}
+
 
 export function App() {
   const [products, setProducts] = useState(() => {
     const saved = localStorage.getItem('aviaire_products')
-    if (saved) return JSON.parse(saved)
+
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed)) {
+          // normalize old records so AdminDashboard/Collections both receive {imageUrl, collection}
+          const normalized = parsed.map(normalizeProduct)
+          localStorage.setItem('aviaire_products', JSON.stringify(normalized))
+          return normalized
+        }
+      } catch (e) {
+        // fall through to reseed
+      }
+    }
+
     localStorage.setItem('aviaire_products', JSON.stringify(SEED_PRODUCTS))
     return SEED_PRODUCTS
   })
+
+
 
 
   const [cart, setCart] = useState(() => {
@@ -75,35 +124,129 @@ export function App() {
     localStorage.setItem('aviaire_products', JSON.stringify(products))
   }, [products])
 
+  // Keep local fallback in sync, but for logged-in users we treat backend as source of truth.
   useEffect(() => {
     localStorage.setItem('aviaire_cart', JSON.stringify(cart))
   }, [cart])
 
-  const addToCart = (product) => {
-    setCart((prev) => {
-      const existing = prev.find((item) => item.id === product.id)
-      if (existing) {
-        return prev.map((item) =>
-          item.id === product.id ? { ...item, qty: item.qty + 1 } : item
-        )
-      }
-      return [...prev, { ...product, qty: 1 }]
+  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'
+
+  const loadCartFromBackend = async () => {
+    const token = localStorage.getItem('aviaire_auth_token')
+    if (!token) return
+
+    const res = await fetch(`${API_BASE}/cart`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     })
+
+    const data = await res.json()
+    if (!res.ok) throw new Error(data?.message || 'Failed to load cart')
+
+    // backend returns cartItems with product info; normalize to UI shape.
+    const normalized = (data?.items || data?.cartItems || []).map((x) => ({
+      id: x.productId?._id || x.productId?._id?.toString?.() || x.productId || x._id,
+      name: x.productId?.name || x.name,
+      imageUrl: x.productId?.imageUrl || x.imageUrl,
+      collection: x.productId?.collection || x.collection,
+      price: x.productId?.price ?? x.price,
+      qty: x.qty ?? x.quantity ?? 1,
+    }))
+
+    setCart(normalized)
   }
 
-  const removeFromCart = (id) => {
-    setCart((prev) => prev.filter((item) => item.id !== id))
-  }
+  useEffect(() => {
+    // load cart when app starts if token exists
+    loadCartFromBackend().catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-  const updateCartQty = (id, qty) => {
-    if (qty < 1) {
-      removeFromCart(id)
+  const addToCart = async (product) => {
+    const token = localStorage.getItem('aviaire_auth_token')
+
+    // If not logged in, use local cart.
+    if (!token) {
+      setCart((prev) => {
+        const existing = prev.find((item) => item.id === product.id)
+        if (existing) {
+          return prev.map((item) =>
+            item.id === product.id ? { ...item, qty: item.qty + 1 } : item
+          )
+        }
+        return [...prev, { ...product, qty: 1 }]
+      })
       return
     }
-    setCart((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, qty } : item))
-    )
+
+    const res = await fetch(`${API_BASE}/cart/add`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ productId: product.id || product._id, qty: 1 }),
+    })
+
+    const data = await res.json()
+    if (!res.ok) throw new Error(data?.message || 'Failed to add to cart')
+
+    await loadCartFromBackend()
   }
+
+  const removeFromCart = async (id) => {
+    const token = localStorage.getItem('aviaire_auth_token')
+
+    if (!token) {
+      setCart((prev) => prev.filter((item) => item.id !== id))
+      return
+    }
+
+    const res = await fetch(`${API_BASE}/cart/remove`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ productId: id }),
+    })
+
+    const data = await res.json()
+    if (!res.ok) throw new Error(data?.message || 'Failed to remove from cart')
+
+    await loadCartFromBackend()
+  }
+
+  const updateCartQty = async (id, qty) => {
+    if (qty < 1) {
+      await removeFromCart(id)
+      return
+    }
+
+    const token = localStorage.getItem('aviaire_auth_token')
+
+    if (!token) {
+      setCart((prev) => prev.map((item) => (item.id === id ? { ...item, qty } : item)))
+      return
+    }
+
+    const res = await fetch(`${API_BASE}/cart/quantity`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ productId: id, qty }),
+    })
+
+    const data = await res.json()
+    if (!res.ok) throw new Error(data?.message || 'Failed to update cart quantity')
+
+    await loadCartFromBackend()
+  }
+
 
   return (
     <BrowserRouter>

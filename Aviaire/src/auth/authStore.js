@@ -28,7 +28,9 @@ export const authStore = {
     return this.getRole() === 'admin'
   },
 
-  login({ role = 'user', token = 'demo' } = {}) {
+  // token comes from backend login.
+  login({ role = 'user', token } = {}) {
+    if (!token) throw new Error('token is required')
     localStorage.setItem(AUTH_KEYS.token, token)
     localStorage.setItem(AUTH_KEYS.role, role)
   },
@@ -38,4 +40,5 @@ export const authStore = {
     localStorage.removeItem(AUTH_KEYS.role)
   },
 }
+
 

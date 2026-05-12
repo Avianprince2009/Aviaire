@@ -1,10 +1,15 @@
-import React from 'react'
-import { Link } from 'react-router-dom'
+import React, { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
 import logo from '../assets/logo.png'
+import { authStore } from '../auth/authStore'
 
 const Login = () => {
+  const navigate = useNavigate()
+  const [showPassword, setShowPassword] = useState(false)
+
   const formik = useFormik({
     initialValues: {
       email: '',
@@ -18,9 +23,27 @@ const Login = () => {
         .min(6, 'Password must be at least 6 characters')
         .required('Password is required'),
     }),
-    onSubmit: (values) => {
-      console.log('Login:', values)
-      // Handle login logic here
+    onSubmit: async (values) => {
+      try {
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4008/api/v1'
+        const res = await fetch(`${API_BASE}/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(values),
+        })
+
+        const data = await res.json()
+        if (!res.ok) throw new Error(data?.message || 'Login failed')
+
+        // backend returns: { token }
+        authStore.login({ role: 'user', token: data.token })
+        // navigate to protected area if needed
+        navigate('/', { replace: true })
+
+      } catch (e) {
+        console.error(e)
+        alert(e.message)
+      }
     },
   })
 
@@ -61,14 +84,27 @@ const Login = () => {
               <label className="block text-white/60 text-xs tracking-[0.2em] uppercase mb-3">
                 Password
               </label>
-              <input 
-                type="password"
-                name="password"
-                onChange={formik.handleChange}
-                onBlur={formik.handleBlur}
-                value={formik.values.password}
-                className="w-full bg-[#0A0A0A] border border-white/10 px-4 py-3 text-white text-sm focus:border-[#C9A961] focus:outline-none transition"
-              />
+
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  value={formik.values.password}
+                  className="w-full bg-[#0A0A0A] border border-white/10 px-4 py-3 pr-12 text-white text-sm focus:border-[#C9A961] focus:outline-none transition"
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`} />
+                </button>
+              </div>
+
               {formik.touched.password && formik.errors.password && (
                 <p className="mt-2 text-xs text-red-400">{formik.errors.password}</p>
               )}

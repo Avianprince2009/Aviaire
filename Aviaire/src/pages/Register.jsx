@@ -1,10 +1,11 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
 import logo from '../assets/logo.png'
 
 const Register = () => {
+  const navigate = useNavigate()
   const formik = useFormik({
     initialValues: {
       name: '',
@@ -26,9 +27,34 @@ const Register = () => {
         .oneOf([Yup.ref('password')], 'Passwords must match')
         .required('Please confirm your password'),
     }),
-    onSubmit: (values) => {
-      console.log('Register:', values)
-      // Handle registration logic here
+    onSubmit: async (values, { setSubmitting }) => {
+      try {
+        console.log('Register:', values)
+
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4008/api/v1'
+
+        const res = await fetch(`${API_BASE}/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(values),
+        })
+
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) {
+          throw new Error(data?.message || 'Registration failed')
+        }
+
+        // Backend returns { message, data: { token } }
+        if (data?.data?.token) {
+          // optional: store token if you want auto-login behavior
+          // authStore.login({ role: 'user', token: data.data.token })
+        }
+
+        // After the user is created successfully, take them back to login.
+        navigate('/login', { replace: true })
+      } finally {
+        setSubmitting(false)
+      }
     },
   })
 

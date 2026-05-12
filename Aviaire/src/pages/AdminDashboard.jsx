@@ -6,6 +6,17 @@ const AdminDashboard = ({ products, setProducts }) => {
   const [showToast, setShowToast] = useState(false)
   const [imagePreview, setImagePreview] = useState('')
   const [editingId, setEditingId] = useState(null)
+  const [activeCollection, setActiveCollection] = useState('all')
+
+  const COLLECTIONS = [
+    { key: 'all', label: 'All' },
+    { key: 'rolex', label: 'Rolex' },
+    { key: 'patek-philippe', label: 'Patek Philippe' },
+    { key: 'audemars-piguet', label: 'Audemars Piguet' },
+    { key: 'omega', label: 'Omega' },
+    { key: 'cartier', label: 'Cartier' },
+  ]
+
 
   const formik = useFormik({
     initialValues: {
@@ -118,6 +129,7 @@ const AdminDashboard = ({ products, setProducts }) => {
 
   return (
     <div className='bg-[#0a0a0a] text-white min-h-screen font-sans mt-16'>
+
       {showToast && (
         <div className='fixed top-6 right-6 z-50 bg-[#c9a961] text-black px-6 py-3 rounded shadow-lg animate-in fade-in slide-in-from-top-2'>
           <i className="mr-2 fa fa-check-circle"></i>{editingId ? 'Watch updated' : 'Watch added to collection'}
@@ -308,62 +320,106 @@ const AdminDashboard = ({ products, setProducts }) => {
                 </div>
               </div>
 
-              {products.length === 0 ? (
-                <div className='py-32 text-center'>
-                  <div className='w-20 h-20 mx-auto rounded-full bg-[#c9a961]/5 flex items-center justify-center mb-6'>
-                    <i className="fa fa-gem text-[#c9a961]/30 text-3xl"></i>
-                  </div>
-                  <p className='font-serif text-lg text-zinc-300'>No Entries</p>
-                  <p className='mt-2 text-sm text-zinc-600'>Begin by registering your first timepiece</p>
-                </div>
-              ) : (
-                <div className='pr-2 space-y-4 overflow-y-auto max-h-175 custom-scroll'>
-                  {products.map(product => (
-                    <div key={product.id} className='group flex gap-5 bg-zinc-800/30 p-5 rounded-xl border border-zinc-700/30 hover:border-[#c9a961]/40 hover:bg-zinc-800/50 transition-all duration-300'>
-                      <img src={product.imageUrl} alt={product.name} className='object-contain w-24 h-24 bg-white rounded-lg shadow-lg' />
-                      <div className='flex-1'>
-                        <div className='flex items-start justify-between'>
-                          <div>
-                            <h3 className='font-serif text-lg text-[#c9a961] font-light'>{product.name}</h3>
-                            <div className='flex items-center gap-3 mt-2'>
-                              <span className='text-xs tracking-wider uppercase text-zinc-500'>
-                                <i className="mr-1.5 fa fa-layer-group text-[#c9a961]/60"></i>{product.collection}
-                              </span>
-                              <span className='text-xs text-zinc-600'>•</span>
-                              <span className='text-xs text-zinc-500'>
-                                ID: {product.id.toString().slice(-6)}
-                              </span>
+              {/* Collection filter (matches Collections page UI) */}
+              <div className='flex flex-wrap justify-center gap-3 mb-6'>
+                {COLLECTIONS.map((col) => (
+                  <button
+                    key={col.key}
+                    type='button'
+                    onClick={() => setActiveCollection(col.key)}
+                    className={`px-5 py-2 rounded-full text-xs tracking-widest uppercase transition-all duration-300 border ${
+                      activeCollection === col.key
+                        ? 'bg-[#C9A961] text-black border-[#C9A961]'
+                        : 'bg-transparent text-zinc-400 border-zinc-700 hover:border-[#C9A961] hover:text-[#C9A961]'
+                    }`}
+                  >
+                    {col.label}
+                  </button>
+                ))}
+              </div>
+
+              {(() => {
+                const filteredProducts =
+                  activeCollection === 'all'
+                    ? products
+                    : products.filter((p) => p.collection === activeCollection)
+
+                if (filteredProducts.length === 0) {
+                  return (
+                    <div className='py-16 text-center'>
+                      <div className='w-20 h-20 mx-auto rounded-full bg-[#c9a961]/5 flex items-center justify-center mb-6'>
+                        <i className="fa fa-gem text-[#c9a961]/30 text-3xl"></i>
+                      </div>
+                      <p className='font-serif text-lg text-zinc-300'>No Entries</p>
+                      <p className='mt-2 text-sm text-zinc-600'>No timepieces found for this collection</p>
+                    </div>
+                  )
+                }
+
+                return (
+                  <div className='pr-2 space-y-4 overflow-y-auto max-h-175 custom-scroll'>
+                    {filteredProducts.map((product) => (
+                      <div
+                        key={product.id}
+                        className='group flex gap-5 bg-zinc-800/30 p-5 rounded-xl border border-zinc-700/30 hover:border-[#c9a961]/40 hover:bg-zinc-800/50 transition-all duration-300'
+                      >
+                        <img
+                          src={product.imageUrl}
+                          alt={product.name}
+                          className='object-contain w-24 h-24 bg-white rounded-lg shadow-lg'
+                        />
+                        <div className='flex-1'>
+                          <div className='flex items-start justify-between'>
+                            <div>
+                              <h3 className='font-serif text-lg text-[#c9a961] font-light'>
+                                {product.name}
+                              </h3>
+                              <div className='flex items-center gap-3 mt-2'>
+                                <span className='text-xs tracking-wider uppercase text-zinc-500'>
+                                  <i className="mr-1.5 fa fa-layer-group text-[#c9a961]/60"></i>
+                                  {product.collection}
+                                </span>
+                                <span className='text-xs text-zinc-600'>•</span>
+                                <span className='text-xs text-zinc-500'>
+                                  ID: {product.id.toString().slice(-6)}
+                                </span>
+                              </div>
+                            </div>
+                            <div className='flex items-center gap-2'>
+                              <button
+                                type='button'
+                                onClick={() => handleEdit(product)}
+                                className='text-sm transition-all opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-[#c9a961]'
+                                title='Edit'
+                              >
+                                <i className="fa fa-pen"></i>
+                              </button>
+                              <button
+                                type='button'
+                                onClick={() => handleDelete(product.id)}
+                                className='text-sm transition-all opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-400'
+                              >
+                                <i className="fa fa-times"></i>
+                              </button>
                             </div>
                           </div>
-                        <div className='flex items-center gap-2'>
-                          <button
-                            type='button'
-                            onClick={() => handleEdit(product)}
-                            className='text-sm transition-all opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-[#c9a961]'
-                            title='Edit'
-                          >
-                            <i className="fa fa-pen"></i>
-                          </button>
-                          <button
-                            type='button'
-                            onClick={() => handleDelete(product.id)}
-                            className='text-sm transition-all opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-400'
-                          >
-                            <i className="fa fa-times"></i>
-                          </button>
+
+                          {product.description && (
+                            <p className='mt-3 text-xs text-zinc-500 line-clamp-2'>
+                              {product.description}
+                            </p>
+                          )}
+
+                          <p className='mt-3 text-base font-light'>
+                            <i className="fa fa-tag text-[#c9a961] mr-2 text-xs"></i>
+                            ${Number(product.price).toLocaleString()}
+                          </p>
                         </div>
-                        </div>
-                        {product.description && (
-                          <p className='mt-3 text-xs text-zinc-500 line-clamp-2'>{product.description}</p>
-                        )}
-                        <p className='mt-3 text-base font-light'>
-                          <i className="fa fa-tag text-[#c9a961] mr-2 text-xs"></i>${Number(product.price).toLocaleString()}
-                        </p>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )
+              })()}
             </div>
           </div>
         </div>
@@ -385,5 +441,6 @@ const AdminDashboard = ({ products, setProducts }) => {
     </div>
   )
 }
+
 
 export default AdminDashboard
