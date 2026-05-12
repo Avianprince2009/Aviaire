@@ -6,6 +6,7 @@ import logo from '../assets/logo.png'
 
 const Register = () => {
   const navigate = useNavigate()
+
   const formik = useFormik({
     initialValues: {
       name: '',
@@ -29,9 +30,8 @@ const Register = () => {
     }),
     onSubmit: async (values, { setSubmitting }) => {
       try {
-        console.log('Register:', values)
-
-        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4008/api/v1'
+        // FIXED: was hardcoded to port 4008, backend runs on 3000
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'
 
         const res = await fetch(`${API_BASE}/register`, {
           method: 'POST',
@@ -44,14 +44,10 @@ const Register = () => {
           throw new Error(data?.message || 'Registration failed')
         }
 
-        // Backend returns { message, data: { token } }
-        if (data?.data?.token) {
-          // optional: store token if you want auto-login behavior
-          // authStore.login({ role: 'user', token: data.data.token })
-        }
-
-        // After the user is created successfully, take them back to login.
         navigate('/login', { replace: true })
+      } catch (e) {
+        console.error(e)
+        alert(e.message)
       } finally {
         setSubmitting(false)
       }
@@ -78,7 +74,7 @@ const Register = () => {
               <label className="block text-white/60 text-xs tracking-[0.2em] uppercase mb-3">
                 Name
               </label>
-              <input 
+              <input
                 type="text"
                 name="name"
                 onChange={formik.handleChange}
@@ -95,7 +91,7 @@ const Register = () => {
               <label className="block text-white/60 text-xs tracking-[0.2em] uppercase mb-3">
                 E-mail
               </label>
-              <input 
+              <input
                 type="email"
                 name="email"
                 onChange={formik.handleChange}
@@ -112,7 +108,7 @@ const Register = () => {
               <label className="block text-white/60 text-xs tracking-[0.2em] uppercase mb-3">
                 Password
               </label>
-              <input 
+              <input
                 type="password"
                 name="password"
                 onChange={formik.handleChange}
@@ -129,7 +125,7 @@ const Register = () => {
               <label className="block text-white/60 text-xs tracking-[0.2em] uppercase mb-3">
                 Confirm Password
               </label>
-              <input 
+              <input
                 type="password"
                 name="confirmPassword"
                 onChange={formik.handleChange}
@@ -142,17 +138,18 @@ const Register = () => {
               )}
             </div>
 
-            <button 
+            <button
               type="submit"
-              className="w-full bg-[#C9A961] text-black py-4 text-xs tracking-[0.3em] uppercase hover:bg-[#B89851] transition mt-2"
+              disabled={formik.isSubmitting}
+              className="w-full bg-[#C9A961] text-black py-4 text-xs tracking-[0.3em] uppercase hover:bg-[#B89851] transition mt-2 disabled:opacity-60"
             >
-              Request Access
+              {formik.isSubmitting ? 'Requesting...' : 'Request Access'}
             </button>
           </form>
 
           <div className="pt-6 mt-8 text-center border-t border-white/10">
             <p className="text-xs text-white/60">
-              Already a client? 
+              Already a client?
               <Link to="/login" className="text-[#C9A961] hover:text-white transition ml-2">
                 Enter
               </Link>
@@ -161,7 +158,7 @@ const Register = () => {
         </div>
 
         <p className="mt-6 text-xs text-center text-white/40">
-          © 2026 L’ALLURE. All Rights Reserved.
+          © 2026 L'ALLURE. All Rights Reserved.
         </p>
       </div>
     </div>

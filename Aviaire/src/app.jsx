@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom' 
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import React, { useState, useEffect } from 'react'
 import './app.css'
 import Navbar from './components/Navbar'
@@ -18,7 +18,7 @@ const SEED_PRODUCTS = [
   {
     id: 1,
     name: 'Rolex Submariner',
-    description: 'A timeless diver’s icon with enduring character.',
+    description: 'A timeless diver\'s icon with enduring character.',
     price: 12500,
     imageUrl:
       'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80',
@@ -49,8 +49,6 @@ const SEED_PRODUCTS = [
 
 function normalizeProduct(p) {
   if (!p || typeof p !== 'object') return p
-
-  // If already normalized, just return.
   if ('imageUrl' in p && 'collection' in p) return p
 
   const collection =
@@ -72,13 +70,10 @@ function normalizeProduct(p) {
 
   const imageUrl = p.imageUrl || p.image
 
-  return {
-    ...p,
-    collection,
-    imageUrl,
-  }
+  return { ...p, collection, imageUrl }
 }
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'
 
 export function App() {
   const [products, setProducts] = useState(() => {
@@ -88,7 +83,6 @@ export function App() {
       try {
         const parsed = JSON.parse(saved)
         if (Array.isArray(parsed)) {
-          // normalize old records so AdminDashboard/Collections both receive {imageUrl, collection}
           const normalized = parsed.map(normalizeProduct)
           localStorage.setItem('aviaire_products', JSON.stringify(normalized))
           return normalized
@@ -102,16 +96,12 @@ export function App() {
     return SEED_PRODUCTS
   })
 
-
-
-
   const [cart, setCart] = useState(() => {
     const saved = localStorage.getItem('aviaire_cart')
     return saved ? JSON.parse(saved) : []
   })
 
   useEffect(() => {
-    // Ensure storage contains initialized defaults.
     if (!localStorage.getItem('aviaire_products')) {
       localStorage.setItem('aviaire_products', JSON.stringify(SEED_PRODUCTS))
     }
@@ -124,12 +114,9 @@ export function App() {
     localStorage.setItem('aviaire_products', JSON.stringify(products))
   }, [products])
 
-  // Keep local fallback in sync, but for logged-in users we treat backend as source of truth.
   useEffect(() => {
     localStorage.setItem('aviaire_cart', JSON.stringify(cart))
   }, [cart])
-
-  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'
 
   const loadCartFromBackend = async () => {
     const token = localStorage.getItem('aviaire_auth_token')
@@ -145,9 +132,8 @@ export function App() {
     const data = await res.json()
     if (!res.ok) throw new Error(data?.message || 'Failed to load cart')
 
-    // backend returns cartItems with product info; normalize to UI shape.
-    const normalized = (data?.items || data?.cartItems || []).map((x) => ({
-      id: x.productId?._id || x.productId?._id?.toString?.() || x.productId || x._id,
+    const normalized = (data?.data?.items || data?.items || []).map((x) => ({
+      id: x.productId?._id?.toString() || x.productId || x._id,
       name: x.productId?.name || x.name,
       imageUrl: x.productId?.imageUrl || x.imageUrl,
       collection: x.productId?.collection || x.collection,
@@ -159,7 +145,6 @@ export function App() {
   }
 
   useEffect(() => {
-    // load cart when app starts if token exists
     loadCartFromBackend().catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -167,7 +152,6 @@ export function App() {
   const addToCart = async (product) => {
     const token = localStorage.getItem('aviaire_auth_token')
 
-    // If not logged in, use local cart.
     if (!token) {
       setCart((prev) => {
         const existing = prev.find((item) => item.id === product.id)
@@ -187,7 +171,8 @@ export function App() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ productId: product.id || product._id, qty: 1 }),
+      // FIXED: was sending `qty` but backend reads `quantity`
+      body: JSON.stringify({ productId: product.id || product._id, quantity: 1 }),
     })
 
     const data = await res.json()
@@ -238,7 +223,8 @@ export function App() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ productId: id, qty }),
+      // FIXED: was sending `qty` but backend reads `quantity`
+      body: JSON.stringify({ productId: id, quantity: qty }),
     })
 
     const data = await res.json()
@@ -246,7 +232,6 @@ export function App() {
 
     await loadCartFromBackend()
   }
-
 
   return (
     <BrowserRouter>
@@ -274,10 +259,9 @@ export function App() {
             </AuthGuard>
           }
         />
-        <Route path='*' element={<NotFound/>} />
-
+        <Route path='*' element={<NotFound />} />
       </Routes>
-        <Footer/>
+      <Footer />
     </BrowserRouter>
   )
 }

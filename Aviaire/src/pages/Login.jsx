@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
 import logo from '../assets/logo.png'
@@ -23,26 +22,32 @@ const Login = () => {
         .min(6, 'Password must be at least 6 characters')
         .required('Password is required'),
     }),
-    onSubmit: async (values) => {
+    onSubmit: async (values, { setSubmitting }) => {
       try {
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4008/api/v1'
+        // FIXED: was hardcoded to port 4008, backend runs on 3000
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'
+
         const res = await fetch(`${API_BASE}/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(values),
         })
 
+
         const data = await res.json()
         if (!res.ok) throw new Error(data?.message || 'Login failed')
 
-        // backend returns: { token }
+        // FIXED: save token under the same key app.jsx reads ('aviaire_auth_token')
+        // authStore.login should write to localStorage key 'aviaire_auth_token'
         authStore.login({ role: 'user', token: data.token })
-        // navigate to protected area if needed
+
         navigate('/', { replace: true })
 
       } catch (e) {
         console.error(e)
         alert(e.message)
+      } finally {
+        setSubmitting(false)
       }
     },
   })
@@ -67,7 +72,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4008/api
               <label className="block text-white/60 text-xs tracking-[0.2em] uppercase mb-3">
                 E-mail
               </label>
-              <input 
+              <input
                 type="email"
                 name="email"
                 onChange={formik.handleChange}
@@ -110,17 +115,18 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4008/api
               )}
             </div>
 
-            <button 
+            <button
               type="submit"
-              className="w-full bg-[#C9A961] text-black py-4 text-xs tracking-[0.3em] uppercase hover:bg-[#B89851] transition mt-2"
+              disabled={formik.isSubmitting}
+              className="w-full bg-[#C9A961] text-black py-4 text-xs tracking-[0.3em] uppercase hover:bg-[#B89851] transition mt-2 disabled:opacity-60"
             >
-              Enter
+              {formik.isSubmitting ? 'Entering...' : 'Enter'}
             </button>
           </form>
 
           <div className="pt-6 mt-8 text-center border-t border-white/10">
             <p className="text-xs text-white/60">
-              New client? 
+              New client?
               <Link to="/register" className="text-[#C9A961] hover:text-white transition ml-2">
                 Request Access
               </Link>
@@ -129,7 +135,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4008/api
         </div>
 
         <p className="mt-6 text-xs text-center text-white/40">
-          © 2026 L’ALLURE. All Rights Reserved.
+          © 2026 L'ALLURE. All Rights Reserved.
         </p>
       </div>
     </div>
