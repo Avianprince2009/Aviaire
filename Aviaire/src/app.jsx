@@ -73,7 +73,7 @@ function normalizeProduct(p) {
   return { ...p, collection, imageUrl }
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4008/api/v1'
 
 export function App() {
   const [products, setProducts] = useState(() => {
@@ -146,7 +146,6 @@ export function App() {
 
   useEffect(() => {
     loadCartFromBackend().catch(() => {})
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const addToCart = async (product) => {
@@ -171,7 +170,6 @@ export function App() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      // FIXED: was sending `qty` but backend reads `quantity`
       body: JSON.stringify({ productId: product.id || product._id, quantity: 1 }),
     })
 
@@ -223,7 +221,6 @@ export function App() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      // FIXED: was sending `qty` but backend reads `quantity`
       body: JSON.stringify({ productId: id, quantity: qty }),
     })
 

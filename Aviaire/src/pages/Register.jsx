@@ -30,8 +30,7 @@ const Register = () => {
     }),
     onSubmit: async (values, { setSubmitting }) => {
       try {
-        // FIXED: was hardcoded to port 4008, backend runs on 3000
-        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4008/api/v1'
 
         const res = await fetch(`${API_BASE}/register`, {
           method: 'POST',

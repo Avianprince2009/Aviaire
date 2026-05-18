@@ -24,8 +24,8 @@ const Login = () => {
     }),
     onSubmit: async (values, { setSubmitting }) => {
       try {
-        // FIXED: was hardcoded to port 4008, backend runs on 3000
-        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'
+
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4008/api/v1'
 
         const res = await fetch(`${API_BASE}/login`, {
           method: 'POST',
@@ -37,8 +37,7 @@ const Login = () => {
         const data = await res.json()
         if (!res.ok) throw new Error(data?.message || 'Login failed')
 
-        // FIXED: save token under the same key app.jsx reads ('aviaire_auth_token')
-        // authStore.login should write to localStorage key 'aviaire_auth_token'
+
         authStore.login({ role: 'user', token: data.token })
 
         navigate('/', { replace: true })
