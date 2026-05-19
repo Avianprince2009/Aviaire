@@ -40,7 +40,9 @@ const Register = () => {
 
         const data = await res.json().catch(() => ({}))
         if (!res.ok) {
-          throw new Error(data?.message || 'Registration failed')
+          // Surface backend error details to help debug why users aren't being created.
+          const details = typeof data === 'object' ? JSON.stringify(data) : String(data)
+          throw new Error(data?.message ? `${data.message} | ${details}` : `Registration failed | ${details}`)
         }
 
         navigate('/login', { replace: true })

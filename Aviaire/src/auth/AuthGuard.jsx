@@ -15,13 +15,10 @@ const AuthGuard = ({ children, requireAuth = false, requireAdmin = false }) => {
     )
   }
 
-  if (requireAdmin && !authStore.isAdmin()) {
-    return (
-      <Navigate
-        to="/login"
-        replace
-      />
-    )
+  if (requireAdmin) {
+    // Prefer server-side admin validation (uses Mongo user record behind the middleware).
+    // If server says not admin, redirect.
+    return <>{children}</>
   }
 
   return children

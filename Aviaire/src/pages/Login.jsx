@@ -38,9 +38,40 @@ const Login = () => {
         if (!res.ok) throw new Error(data?.message || 'Login failed')
 
 
-        authStore.login({ role: 'user', token: data.token })
+        // backend /login currently returns only { token }.
+        // Use the decoded JWT payload to decide admin.
+        let role = 'user'
+        let decodedEmail = null
+        try {
+          const token = data?.token
+          const parts = String(token || '').split('.')
+          if (parts.length === 3) {
+            const payload = JSON.parse(
+              atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'))
+            )
+            decodedEmail = payload?.email ?? null
+            const email = String(decodedEmail || '').toLowerCase()
+            // ADMIN rule: your backend middleware uses this admin email.
+            role = email === 'abubakriluqman7@gmail.com' ? 'admin' : 'user'
+          }
+
+          // debug
+          // eslint-disable-next-line no-console
+          console.log('Login decoded token payload email =>', decodedEmail, 'role =>', role)
+        } catch {
+          role = 'user'
+          decodedEmail = null
+        }
+
+        // Ensure role is persisted even if authStore fails silently.
+        localStorage.setItem('aviaire_auth_role', role)
+        authStore.login({ role, token: data.token })
+
+        // show a one-time success message after redirect
+        localStorage.setItem('aviaire_login_success', '1')
 
         navigate('/', { replace: true })
+
 
       } catch (e) {
         console.error(e)

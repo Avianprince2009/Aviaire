@@ -75,20 +75,31 @@ function normalizeProduct(p) {
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4008/api/v1'
 
+function isJwtExpired(token) {
+  try {
+    const parts = String(token).split('.')
+    if (parts.length !== 3) return true
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
+    if (!payload?.exp) return true
+    return Date.now() >= payload.exp * 1000
+  } catch {
+    return true
+  }
+}
+
 export function App() {
+
   const [products, setProducts] = useState(() => {
     const saved = localStorage.getItem('aviaire_products')
 
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
-        if (Array.isArray(parsed)) {
-          const normalized = parsed.map(normalizeProduct)
-          localStorage.setItem('aviaire_products', JSON.stringify(normalized))
-          return normalized
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map(normalizeProduct)
         }
-      } catch (e) {
-        // fall through to reseed
+      } catch {
+        // ignore and reseed
       }
     }
 
@@ -96,17 +107,13 @@ export function App() {
     return SEED_PRODUCTS
   })
 
-  const [cart, setCart] = useState(() => {
-    const saved = localStorage.getItem('aviaire_cart')
-    return saved ? JSON.parse(saved) : []
-  })
+
+
+  const [cart, setCart] = useState([])
 
   useEffect(() => {
     if (!localStorage.getItem('aviaire_products')) {
       localStorage.setItem('aviaire_products', JSON.stringify(SEED_PRODUCTS))
-    }
-    if (!localStorage.getItem('aviaire_cart')) {
-      localStorage.setItem('aviaire_cart', JSON.stringify([]))
     }
   }, [])
 
@@ -114,13 +121,16 @@ export function App() {
     localStorage.setItem('aviaire_products', JSON.stringify(products))
   }, [products])
 
-  useEffect(() => {
-    localStorage.setItem('aviaire_cart', JSON.stringify(cart))
-  }, [cart])
 
   const loadCartFromBackend = async () => {
-    const token = localStorage.getItem('aviaire_auth_token')
+    const tokenKey = 'aviaire_auth_token'
+    let token = localStorage.getItem(tokenKey)
+    if (token && isJwtExpired(token)) {
+      localStorage.removeItem(tokenKey)
+      token = null
+    }
     if (!token) return
+
 
     const res = await fetch(`${API_BASE}/cart`, {
       method: 'GET',
@@ -129,29 +139,106 @@ export function App() {
       },
     })
 
-    const data = await res.json()
+    // If backend returns non-JSON, avoid crashing JSON.parse
+    const data = await res.json().catch(() => ({}))
     if (!res.ok) throw new Error(data?.message || 'Failed to load cart')
 
-    const normalized = (data?.data?.items || data?.items || []).map((x) => ({
-      id: x.productId?._id?.toString() || x.productId || x._id,
-      name: x.productId?.name || x.name,
-      imageUrl: x.productId?.imageUrl || x.imageUrl,
-      collection: x.productId?.collection || x.collection,
-      price: x.productId?.price ?? x.price,
-      qty: x.qty ?? x.quantity ?? 1,
-    }))
+
+    const items = data?.data?.items || data?.items || []
+    const normalized = items.map((x) => {
+      // If backend populates, x.productId is the populated Product doc
+      if (x?.productId && typeof x.productId === 'object') {
+        return {
+          id: x.productId._id?.toString?.() || x.productId._id,
+          name: x.productId.name,
+          imageUrl: x.productId.imageUrl,
+          collection: x.productId.collection,
+          price: x.productId.price,
+          qty: x.qty ?? x.quantity ?? 1,
+        }
+      }
+
+      // Fallback when backend isn't populated
+      return {
+        id: x.productId?._id?.toString?.() || x.productId || x._id,
+        name: x.name,
+        imageUrl: x.imageUrl,
+        collection: x.collection,
+        price: x.price,
+        qty: x.qty ?? x.quantity ?? 1,
+      }
+    })
+
 
     setCart(normalized)
   }
 
+  const getAuthInfoFromToken = () => {
+    const tokenKey = 'aviaire_auth_token'
+    const token = localStorage.getItem(tokenKey)
+    if (!token) return null
+    if (isJwtExpired(token)) return null
+
+    try {
+      const parts = String(token).split('.')
+      if (parts.length !== 3) return null
+      const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
+      return { id: payload?.id, email: payload?.email }
+    } catch {
+      return null
+    }
+  }
+
+  const authInfo = getAuthInfoFromToken()
+
   useEffect(() => {
-    loadCartFromBackend().catch(() => {})
+    const success = localStorage.getItem('aviaire_login_success')
+    if (success) {
+      localStorage.removeItem('aviaire_login_success')
+      // simple alert; can be swapped for a toast later
+      const name = authInfo?.email || 'User'
+      alert(`Logged in successfully as ${name}`)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  useEffect(() => {
+    const loadProductsAndCart = async () => {
+      // 1) Load products (for consistent Mongo ids in UI)
+      try {
+        const res = await fetch(`${API_BASE}/products`, { method: 'GET' })
+        const data = await res.json().catch(() => null)
+        if (res.ok && Array.isArray(data?.data) && data.data.length > 0) {
+          const normalized = data.data.map(normalizeProduct)
+          setProducts(normalized)
+          localStorage.setItem('aviaire_products', JSON.stringify(normalized))
+        }
+      } catch {
+        // ignore and keep cached/seeded products
+      }
+
+      // 2) Always attempt to load cart from backend if token exists
+      await loadCartFromBackend().catch(() => {})
+    }
+
+    loadProductsAndCart()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+
+
   const addToCart = async (product) => {
-    const token = localStorage.getItem('aviaire_auth_token')
+    const tokenKey = 'aviaire_auth_token'
+    let token = localStorage.getItem(tokenKey)
+    if (token && isJwtExpired(token)) {
+      localStorage.removeItem(tokenKey)
+      token = null
+    }
+
 
     if (!token) {
+      // If user isn't logged in, we can't persist to MongoDB.
+      // We'll keep local in-memory cart only for current session.
       setCart((prev) => {
         const existing = prev.find((item) => item.id === product.id)
         if (existing) {
@@ -164,23 +251,74 @@ export function App() {
       return
     }
 
+
+    // Backend expects Mongo product _id in `productId`.
+    // Seed/seeded UI ids are numeric (1/2/3) and do NOT exist in Mongo.
+    // So if we only have a numeric id, map it to the backend product's _id.
+    const backendProductId = product?._id
+      ? product._id
+      : (() => {
+          const numericId = product?.id
+          if (numericId === undefined || numericId === null) return undefined
+          const match = products.find((p) => p?.id === numericId && p?._id)
+          return match?._id
+        })()
+
+    if (!backendProductId) {
+      // Fallback: if user clicks before backend products load, still allow cart locally.
+      // Also prevents hard failure when product object has only a numeric seed id.
+      setCart((prev) => {
+        const existing = prev.find((item) => item.id === product.id)
+        if (existing) {
+          return prev.map((item) =>
+            item.id === product.id ? { ...item, qty: item.qty + 1 } : item
+          )
+        }
+        return [...prev, { ...product, qty: 1 }]
+      })
+      return
+    }
+
+    const body = {
+      productId: backendProductId,
+      quantity: 1,
+    }
+
+
+
     const res = await fetch(`${API_BASE}/cart/add`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ productId: product.id || product._id, quantity: 1 }),
+      body: JSON.stringify(body),
     })
 
-    const data = await res.json()
-    if (!res.ok) throw new Error(data?.message || 'Failed to add to cart')
+    // In case backend returns non-JSON on errors
+    let data
+    try {
+      data = await res.json()
+    } catch {
+      data = null
+    }
+
+    if (!res.ok) {
+      throw new Error(data?.message || `Failed to add to cart (HTTP ${res.status})`)
+    }
+
 
     await loadCartFromBackend()
   }
 
   const removeFromCart = async (id) => {
-    const token = localStorage.getItem('aviaire_auth_token')
+    const tokenKey = 'aviaire_auth_token'
+    let token = localStorage.getItem(tokenKey)
+    if (token && isJwtExpired(token)) {
+      localStorage.removeItem(tokenKey)
+      token = null
+    }
+
 
     if (!token) {
       setCart((prev) => prev.filter((item) => item.id !== id))
@@ -208,7 +346,13 @@ export function App() {
       return
     }
 
-    const token = localStorage.getItem('aviaire_auth_token')
+    const tokenKey = 'aviaire_auth_token'
+    let token = localStorage.getItem(tokenKey)
+    if (token && isJwtExpired(token)) {
+      localStorage.removeItem(tokenKey)
+      token = null
+    }
+
 
     if (!token) {
       setCart((prev) => prev.map((item) => (item.id === id ? { ...item, qty } : item)))
@@ -232,7 +376,17 @@ export function App() {
 
   return (
     <BrowserRouter>
-      <Navbar cartCount={cart.reduce((sum, item) => sum + item.qty, 0)} />
+      <Navbar
+        cartCount={cart.reduce((sum, item) => sum + item.qty, 0)}
+        isLoggedIn={!!authInfo}
+        userEmail={authInfo?.email || null}
+        onLogout={() => {
+          localStorage.removeItem('aviaire_auth_token')
+          localStorage.removeItem('aviaire_auth_role')
+          window.location.href = '/'
+        }}
+      />
+
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
