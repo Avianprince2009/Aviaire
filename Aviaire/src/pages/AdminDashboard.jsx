@@ -381,7 +381,7 @@ const AdminDashboard = ({ products, setProducts }) => {
                                 </span>
                                 <span className='text-xs text-zinc-600'>•</span>
                                 <span className='text-xs text-zinc-500'>
-                                  ID: {product.id.toString().slice(-6)}
+                                  ID: {String(product?.id ?? product?._id ?? '').slice(-6) || '—'}
                                 </span>
                               </div>
                             </div>

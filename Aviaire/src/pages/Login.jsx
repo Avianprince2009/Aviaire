@@ -154,7 +154,16 @@ const Login = () => {
             </button>
           </form>
 
-          <div className="pt-6 mt-8 text-center border-t border-white/10">
+          <div className="pt-6 mt-8 text-center border-t border-white/10 space-y-3">
+            <div>
+              <button
+                type="button"
+                onClick={() => navigate('/forgot-password')}
+                className="text-xs text-[#C9A961] hover:text-white transition"
+              >
+                Forgot password?
+              </button>
+            </div>
             <p className="text-xs text-white/60">
               New client?
               <Link to="/register" className="text-[#C9A961] hover:text-white transition ml-2">
@@ -162,6 +171,7 @@ const Login = () => {
               </Link>
             </p>
           </div>
+
         </div>
 
         <p className="mt-6 text-xs text-center text-white/40">

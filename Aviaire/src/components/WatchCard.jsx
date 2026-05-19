@@ -23,7 +23,7 @@ const WatchCard = ({ product, onDelete, onEdit, onAddToCart }) => {
           </h3>
           <p className='text-xs tracking-wider uppercase text-zinc-500'>
             <i className="fa fa-fingerprint text-[#c9a961]/60 mr-1.5"></i>
-            ID: {product.id.toString().slice(-6)}
+ID: {String(product?.id ?? '').slice(-6)}
           </p>
         </div>
 

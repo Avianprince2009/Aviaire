@@ -5,5 +5,5 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [preact(), tailwindcss()],
-  base: process.env.VITE_BASE_PATH || '/Aviaire',
+  base: process.env.VITE_BASE_PATH || '/',
 })

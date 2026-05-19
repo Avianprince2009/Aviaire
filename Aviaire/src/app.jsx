@@ -8,6 +8,7 @@ import Collections from './pages/Collections.jsx'
 import Contact from './pages/Contact.jsx'
 import NotFound from './pages/NotFound.jsx'
 import Login from './pages/Login.jsx'
+import ForgotPassword from './pages/ForgotPassword.jsx'
 import Footer from './components/Footer.jsx'
 import Register from './pages/Register.jsx'
 import Cart from './pages/Cart.jsx'
@@ -148,11 +149,8 @@ export function App() {
     const normalized = items.map((x) => {
       // If backend populates, x.productId is the populated Product doc
       if (x?.productId && typeof x.productId === 'object') {
-        const mongoProductId = x.productId._id?.toString?.() || x.productId._id
         return {
-          // Keep both fields so UI/API calls are consistent
-          id: mongoProductId,
-          productId: mongoProductId,
+          id: x.productId._id?.toString?.() || x.productId._id,
           name: x.productId.name,
           imageUrl: x.productId.imageUrl,
           collection: x.productId.collection,
@@ -162,10 +160,9 @@ export function App() {
       }
 
       // Fallback when backend isn't populated
-      const fallbackProductId = x.productId?._id?.toString?.() || x.productId || x._id
       return {
-        id: fallbackProductId?.toString?.() || fallbackProductId,
-        productId: fallbackProductId?.toString?.() || fallbackProductId,
+        id: x.productId?._id?.toString?.() || x.productId || x._id,
+        
         name: x.name,
         imageUrl: x.imageUrl,
         collection: x.collection,
@@ -397,7 +394,9 @@ export function App() {
         <Route path="/collections" element={<Collections products={products} addToCart={addToCart} />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/register" element={<Register />} />
+
         <Route
           path="/cart"
           element={
