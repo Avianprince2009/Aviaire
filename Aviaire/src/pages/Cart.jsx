@@ -42,25 +42,26 @@ const Cart = ({ cart, removeFromCart, updateCartQty }) => {
                         <i className="mr-1.5 fa fa-layer-group text-[#c9a961]/60"></i>{item.collection}
                       </p>
                     </div>
-                    <button
-                      onClick={() => removeFromCart(item.id)}
-                      className="text-sm transition-all text-zinc-600 hover:text-red-400"
-                    >
-                      <i className="fa fa-times"></i>
-                    </button>
+                      <button
+                        onClick={() => removeFromCart(item.productId ?? item.id)}
+                        className="text-sm transition-all text-zinc-600 hover:text-red-400"
+                      >
+                        <i className="fa fa-times"></i>
+                      </button>
+
                   </div>
 
                   <div className="flex items-center justify-between mt-4">
                     <div className="flex items-center gap-3">
                       <button
-                        onClick={() => updateCartQty(item.id, item.qty - 1)}
+                        onClick={() => updateCartQty(item.productId ?? item.id, item.qty - 1)}
                         className="w-8 h-8 rounded-lg bg-zinc-800/50 border border-zinc-700/50 text-zinc-400 hover:border-[#c9a961] hover:text-[#c9a961] transition-all flex items-center justify-center"
                       >
                         <i className="text-xs fa fa-minus"></i>
                       </button>
                       <span className="w-6 text-sm font-medium text-center">{item.qty}</span>
                       <button
-                        onClick={() => updateCartQty(item.id, item.qty + 1)}
+                        onClick={() => updateCartQty(item.productId ?? item.id, item.qty + 1)}
                         className="w-8 h-8 rounded-lg bg-zinc-800/50 border border-zinc-700/50 text-zinc-400 hover:border-[#c9a961] hover:text-[#c9a961] transition-all flex items-center justify-center"
                       >
                         <i className="text-xs fa fa-plus"></i>

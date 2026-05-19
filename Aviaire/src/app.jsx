@@ -148,8 +148,11 @@ export function App() {
     const normalized = items.map((x) => {
       // If backend populates, x.productId is the populated Product doc
       if (x?.productId && typeof x.productId === 'object') {
+        const mongoProductId = x.productId._id?.toString?.() || x.productId._id
         return {
-          id: x.productId._id?.toString?.() || x.productId._id,
+          // Keep both fields so UI/API calls are consistent
+          id: mongoProductId,
+          productId: mongoProductId,
           name: x.productId.name,
           imageUrl: x.productId.imageUrl,
           collection: x.productId.collection,
@@ -159,8 +162,10 @@ export function App() {
       }
 
       // Fallback when backend isn't populated
+      const fallbackProductId = x.productId?._id?.toString?.() || x.productId || x._id
       return {
-        id: x.productId?._id?.toString?.() || x.productId || x._id,
+        id: fallbackProductId?.toString?.() || fallbackProductId,
+        productId: fallbackProductId?.toString?.() || fallbackProductId,
         name: x.name,
         imageUrl: x.imageUrl,
         collection: x.collection,
@@ -168,7 +173,6 @@ export function App() {
         qty: x.qty ?? x.quantity ?? 1,
       }
     })
-
 
     setCart(normalized)
   }
