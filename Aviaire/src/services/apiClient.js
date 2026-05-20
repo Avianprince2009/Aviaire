@@ -16,7 +16,6 @@ async function safeParseTextOrJson(response) {
 
 export async function request(path, opts = {}) {
   const { method = 'GET', headers = {}, json, body, timeout = 15000 } = opts
-
   const url = /^https?:\/\//i.test(path) ? path : apiUrl(path)
 
   const fetchOpts = {
@@ -33,14 +32,22 @@ export async function request(path, opts = {}) {
 
   console.debug('[api] request', method, url)
 
+  let timeoutId = null
   try {
     const controller = typeof AbortController !== 'undefined' ? new AbortController() : null
     if (controller) {
       fetchOpts.signal = controller.signal
-      setTimeout(() => controller.abort(), timeout)
+      timeoutId = setTimeout(() => {
+        try {
+          controller.abort()
+        } catch (e) {
+          // ignore
+        }
+      }, timeout)
     }
 
     const res = await fetch(url, fetchOpts)
+    if (timeoutId) clearTimeout(timeoutId)
     const parsed = await safeParseTextOrJson(res)
 
     if (!res.ok) {
@@ -53,7 +60,10 @@ export async function request(path, opts = {}) {
 
     return parsed
   } catch (fetchErr) {
-    console.warn('[api] fetch failed, attempting axios fallback', fetchErr)
+    if (timeoutId) clearTimeout(timeoutId)
+    // mark timeout specifically
+    if (fetchErr && fetchErr.name === 'AbortError') fetchErr.isTimeout = true
+    console.warn('[api] fetch failed, attempting axios fallback', fetchErr && fetchErr.name, fetchErr && fetchErr.message)
     try {
       const axios = (await import('axios')).default
       const res = await axios({ url, method: method.toLowerCase(), data: json ?? body, headers })
