@@ -14,6 +14,7 @@ import Register from './pages/Register.jsx'
 import Cart from './pages/Cart.jsx'
 import Admin from './pages/AdminDashboard.jsx'
 import AuthGuard from './auth/AuthGuard.jsx'
+import { apiUrl } from './config/api'
 
 const SEED_PRODUCTS = [
   {
@@ -74,8 +75,6 @@ function normalizeProduct(p) {
   return { ...p, collection, imageUrl }
 }
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://aviaire-backend.onrender.com/api/v1'
-
 function isJwtExpired(token) {
   try {
     const parts = String(token).split('.')
@@ -89,7 +88,6 @@ function isJwtExpired(token) {
 }
 
 export function App() {
-
   const [products, setProducts] = useState(() => {
     const saved = localStorage.getItem('aviaire_products')
 
@@ -108,8 +106,6 @@ export function App() {
     return SEED_PRODUCTS
   })
 
-
-
   const [cart, setCart] = useState([])
 
   useEffect(() => {
@@ -122,7 +118,6 @@ export function App() {
     localStorage.setItem('aviaire_products', JSON.stringify(products))
   }, [products])
 
-
   const loadCartFromBackend = async () => {
     const tokenKey = 'aviaire_auth_token'
     let token = localStorage.getItem(tokenKey)
@@ -132,8 +127,7 @@ export function App() {
     }
     if (!token) return
 
-
-    const res = await fetch(`${API_BASE}/cart`, {
+    const res = await fetch(apiUrl('cart'), {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -143,7 +137,6 @@ export function App() {
     // If backend returns non-JSON, avoid crashing JSON.parse
     const data = await res.json().catch(() => ({}))
     if (!res.ok) throw new Error(data?.message || 'Failed to load cart')
-
 
     const items = data?.data?.items || data?.items || []
     const normalized = items.map((x) => {
@@ -162,7 +155,6 @@ export function App() {
       // Fallback when backend isn't populated
       return {
         id: x.productId?._id?.toString?.() || x.productId || x._id,
-        
         name: x.name,
         imageUrl: x.imageUrl,
         collection: x.collection,
@@ -207,7 +199,7 @@ export function App() {
     const loadProductsAndCart = async () => {
       // 1) Load products (for consistent Mongo ids in UI)
       try {
-        const res = await fetch(`${API_BASE}/products`, { method: 'GET' })
+        const res = await fetch(apiUrl('products'), { method: 'GET' })
         const data = await res.json().catch(() => null)
         if (res.ok && Array.isArray(data?.data) && data.data.length > 0) {
           const normalized = data.data.map(normalizeProduct)
@@ -226,8 +218,6 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-
-
   const addToCart = async (product) => {
     const tokenKey = 'aviaire_auth_token'
     let token = localStorage.getItem(tokenKey)
@@ -235,7 +225,6 @@ export function App() {
       localStorage.removeItem(tokenKey)
       token = null
     }
-
 
     if (!token) {
       // If user isn't logged in, we can't persist to MongoDB.
@@ -251,7 +240,6 @@ export function App() {
       })
       return
     }
-
 
     // Backend expects Mongo product _id in `productId`.
     // Seed/seeded UI ids are numeric (1/2/3) and do NOT exist in Mongo.
@@ -285,9 +273,7 @@ export function App() {
       quantity: 1,
     }
 
-
-
-    const res = await fetch(`${API_BASE}/cart/add`, {
+    const res = await fetch(apiUrl('cart/add'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -308,7 +294,6 @@ export function App() {
       throw new Error(data?.message || `Failed to add to cart (HTTP ${res.status})`)
     }
 
-
     await loadCartFromBackend()
   }
 
@@ -320,13 +305,12 @@ export function App() {
       token = null
     }
 
-
     if (!token) {
       setCart((prev) => prev.filter((item) => item.id !== id))
       return
     }
 
-    const res = await fetch(`${API_BASE}/cart/remove`, {
+    const res = await fetch(apiUrl('cart/remove'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -354,13 +338,12 @@ export function App() {
       token = null
     }
 
-
     if (!token) {
       setCart((prev) => prev.map((item) => (item.id === id ? { ...item, qty } : item)))
       return
     }
 
-    const res = await fetch(`${API_BASE}/cart/quantity`, {
+    const res = await fetch(apiUrl('cart/quantity'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -419,3 +402,4 @@ export function App() {
     </BrowserRouter>
   )
 }
+

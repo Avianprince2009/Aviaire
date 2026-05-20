@@ -2,11 +2,8 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
+import { apiUrl } from '../config/api'
 const logo = "/logo.png";
-
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://aviaire-backend.onrender.com/api/v1'
-
 
 const ForgotPassword = () => {
   const navigate = useNavigate()
@@ -22,7 +19,7 @@ const ForgotPassword = () => {
     onSubmit: async (values, { setSubmitting, setStatus }) => {
       setLoading(true)
       try {
-        const res = await fetch(`${API_BASE}/forgot-password`, {
+        const res = await fetch(apiUrl('forgot-password'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: values.email }),
@@ -63,7 +60,7 @@ const ForgotPassword = () => {
     onSubmit: async (values, { setSubmitting, setStatus, resetForm }) => {
       setLoading(true)
       try {
-        const res = await fetch(`${API_BASE}/reset-password`, {
+        const res = await fetch(apiUrl('reset-password'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -103,11 +100,15 @@ const ForgotPassword = () => {
               <h1 className="mb-2 text-2xl font-light tracking-widest text-center text-white">
                 Forgot Password
               </h1>
-              <p className="mb-8 text-sm text-center text-white/60">Enter your email to receive an OTP.</p>
+              <p className="mb-8 text-sm text-center text-white/60">
+                Enter your email to receive an OTP.
+              </p>
 
               <form onSubmit={forgotFormik.handleSubmit} className="space-y-6">
                 <div>
-                  <label className="block text-white/60 text-xs tracking-[0.2em] uppercase mb-3">E-mail</label>
+                  <label className="block text-white/60 text-xs tracking-[0.2em] uppercase mb-3">
+                    E-mail
+                  </label>
                   <input
                     type="email"
                     name="email"
@@ -131,7 +132,9 @@ const ForgotPassword = () => {
               </form>
 
               {forgotFormik.status?.message && (
-                <p className="mt-5 text-sm text-center text-white/60">{forgotFormik.status.message}</p>
+                <p className="mt-5 text-sm text-center text-white/60">
+                  {forgotFormik.status.message}
+                </p>
               )}
             </>
           ) : (
@@ -145,7 +148,9 @@ const ForgotPassword = () => {
 
               <form onSubmit={resetFormik.handleSubmit} className="space-y-6">
                 <div>
-                  <label className="block text-white/60 text-xs tracking-[0.2em] uppercase mb-3">OTP</label>
+                  <label className="block text-white/60 text-xs tracking-[0.2em] uppercase mb-3">
+                    OTP
+                  </label>
                   <input
                     type="text"
                     name="otp"
@@ -160,7 +165,9 @@ const ForgotPassword = () => {
                 </div>
 
                 <div>
-                  <label className="block text-white/60 text-xs tracking-[0.2em] uppercase mb-3">New Password</label>
+                  <label className="block text-white/60 text-xs tracking-[0.2em] uppercase mb-3">
+                    New Password
+                  </label>
                   <input
                     type="password"
                     name="newPassword"
@@ -175,7 +182,9 @@ const ForgotPassword = () => {
                 </div>
 
                 <div>
-                  <label className="block text-white/60 text-xs tracking-[0.2em] uppercase mb-3">Confirm Password</label>
+                  <label className="block text-white/60 text-xs tracking-[0.2em] uppercase mb-3">
+                    Confirm Password
+                  </label>
                   <input
                     type="password"
                     name="confirmPassword"
@@ -185,7 +194,9 @@ const ForgotPassword = () => {
                     className="w-full bg-[#0A0A0A] border border-white/10 px-4 py-3 text-white text-sm focus:border-[#C9A961] focus:outline-none transition"
                   />
                   {resetFormik.touched.confirmPassword && resetFormik.errors.confirmPassword && (
-                    <p className="mt-2 text-xs text-red-400">{resetFormik.errors.confirmPassword}</p>
+                    <p className="mt-2 text-xs text-red-400">
+                      {resetFormik.errors.confirmPassword}
+                    </p>
                   )}
                 </div>
 
@@ -199,7 +210,9 @@ const ForgotPassword = () => {
               </form>
 
               {resetFormik.status?.message && (
-                <p className="mt-5 text-sm text-center text-white/60">{resetFormik.status.message}</p>
+                <p className="mt-5 text-sm text-center text-white/60">
+                  {resetFormik.status.message}
+                </p>
               )}
 
               <button

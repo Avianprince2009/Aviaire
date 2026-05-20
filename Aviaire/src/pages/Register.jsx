@@ -2,6 +2,7 @@ import React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
+import { apiUrl } from '../config/api'
 const logo = "/logo.png";
 
 const Register = () => {
@@ -30,26 +31,30 @@ const Register = () => {
     }),
     onSubmit: async (values, { setSubmitting }) => {
       try {
-        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://aviaire-backend.onrender.com/api/v1'
-
-
-        const res = await fetch(`${API_BASE}/register`, {
+        const { confirmPassword, ...payload } = values
+        const res = await fetch(apiUrl('register'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(values),
+          body: JSON.stringify(payload),
         })
 
-        const data = await res.json().catch(() => ({}))
+        let data = {}
+        try {
+          data = await res.json()
+        } catch {
+          data = {}
+        }
+
         if (!res.ok) {
-          // Surface backend error details to help debug why users aren't being created.
           const details = typeof data === 'object' ? JSON.stringify(data) : String(data)
           throw new Error(data?.message ? `${data.message} | ${details}` : `Registration failed | ${details}`)
         }
 
         navigate('/login', { replace: true })
-      } catch (e) {
-        console.error(e)
-        alert(e.message)
+      } catch (error) {
+        console.error(error)
+        const message = error instanceof Error ? error.message : String(error)
+        alert(message)
       } finally {
         setSubmitting(false)
       }

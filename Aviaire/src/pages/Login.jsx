@@ -4,6 +4,7 @@ import { useFormik } from 'formik'
 import * as Yup from 'yup'
 import logo from '../assets/Logo.png'
 import { authStore } from '../auth/authStore'
+import { apiUrl } from '../config/api'
 
 const Login = () => {
   const navigate = useNavigate()
@@ -24,20 +25,14 @@ const Login = () => {
     }),
     onSubmit: async (values, { setSubmitting }) => {
       try {
-
-        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://aviaire-backend.onrender.com/api/v1'
-
-
-        const res = await fetch(`${API_BASE}/login`, {
+        const res = await fetch(apiUrl('login'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(values),
         })
 
-
         const data = await res.json()
         if (!res.ok) throw new Error(data?.message || 'Login failed')
-
 
         // backend /login currently returns only { token }.
         // Use the decoded JWT payload to decide admin.
@@ -72,8 +67,6 @@ const Login = () => {
         localStorage.setItem('aviaire_login_success', '1')
 
         navigate('/', { replace: true })
-
-
       } catch (e) {
         console.error(e)
         alert(e.message)
@@ -172,7 +165,6 @@ const Login = () => {
               </Link>
             </p>
           </div>
-
         </div>
 
         <p className="mt-6 text-xs text-center text-white/40">
@@ -184,3 +176,4 @@ const Login = () => {
 }
 
 export default Login
+
