@@ -4,6 +4,6 @@ export const API_BASE_URL =
 
 export const apiUrl = (path = '') => {
   const base = API_BASE_URL.replace(/\/$/, '')
-  const p = path.replace(/^\//, '')
-  return `${base}/${p}`
+  const cleanPath = path.replace(/^\//, '')
+  return `${base}/${cleanPath}`
 }
