@@ -2,7 +2,8 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
-import logo from '../assets/logo.png'
+const logo = "/logo.png";
+
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://aviaire-backend.onrender.com/api/v1'
 
