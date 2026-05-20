@@ -5,6 +5,7 @@ import * as Yup from 'yup'
 
 const AdminDashboard = ({ products, setProducts }) => {
   const [imagePreview, setImagePreview] = useState('')
+  const [showToast, setShowToast] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [activeCollection, setActiveCollection] = useState('all')
 
