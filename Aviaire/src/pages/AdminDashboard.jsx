@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
+import { postJson, request } from '../services/apiClient'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
 
 const AdminDashboard = ({ products, setProducts }) => {
-  const [showToast, setShowToast] = useState(false)
   const [imagePreview, setImagePreview] = useState('')
   const [editingId, setEditingId] = useState(null)
   const [activeCollection, setActiveCollection] = useState('all')
@@ -45,39 +45,45 @@ const AdminDashboard = ({ products, setProducts }) => {
       ),
       description: Yup.string().max(300, 'Max 300 characters'),
     }),
-    onSubmit: (values, { resetForm }) => {
+    onSubmit: async (values, { resetForm }) => {
       const finalImage = values.imageFile ? imagePreview : values.imageUrl
 
-      if (editingId) {
-        setProducts(prev => prev.map(p => p.id === editingId ? {
-          ...p,
-          name: values.name,
-          collection: values.collection,
-          price: parseFloat(values.price),
-          imageUrl: finalImage,
-          description: values.description,
-        } : p))
-        setShowToast(true)
-        setEditingId(null)
-        resetForm()
-        setImagePreview('')
-        setTimeout(() => setShowToast(false), 3000)
-      } else {
-        const newProduct = {
-          id: Date.now(),
-          name: values.name,
-          collection: values.collection,
-          price: parseFloat(values.price),
-          imageUrl: finalImage,
-          description: values.description,
+      try {
+        if (editingId) {
+          const payload = {
+            name: values.name,
+            collection: values.collection,
+            price: parseFloat(values.price),
+            imageUrl: finalImage,
+            description: values.description,
+          }
+          const res = await request(`products/${editingId}`, { method: 'PUT', json: payload })
+          const updated = res?.data || res
+          setProducts(prev => prev.map(p => (String(p._id || p.id) === String(editingId) ? updated : p)))
+          setShowToast(true)
+          setEditingId(null)
+          resetForm()
+          setImagePreview('')
+          setTimeout(() => setShowToast(false), 3000)
+        } else {
+          const payload = {
+            name: values.name,
+            collection: values.collection,
+            price: parseFloat(values.price),
+            imageUrl: finalImage,
+            description: values.description,
+          }
+          const res = await postJson('products', payload)
+          const created = res?.data || res
+          setProducts(prev => [created, ...prev])
+          setShowToast(true)
+          resetForm()
+          setImagePreview('')
+          setTimeout(() => setShowToast(false), 3000)
         }
-
-        setProducts(prev => [newProduct, ...prev])
-        setShowToast(true)
-        
-        resetForm()
-        setImagePreview('')
-        setTimeout(() => setShowToast(false), 3000)
+      } catch (e) {
+        console.error('Product save failed', e)
+        alert(e.message || 'Failed to save product')
       }
     },
   })
@@ -103,11 +109,20 @@ const AdminDashboard = ({ products, setProducts }) => {
   }
 
   const handleDelete = (id) => {
-    setProducts(prev => prev.filter(p => p.id !== id))
+    // delete on backend then update UI
+    (async () => {
+      try {
+        await request(`products/${id}`, { method: 'DELETE' })
+        setProducts(prev => prev.filter(p => String(p._id || p.id) !== String(id)))
+      } catch (e) {
+        console.error('Delete failed', e)
+        alert(e.message || 'Failed to delete')
+      }
+    })()
   }
 
   const handleEdit = (product) => {
-    setEditingId(product.id)
+    setEditingId(product._id || product.id)
     formik.setValues({
       name: product.name,
       collection: product.collection,
@@ -360,7 +375,7 @@ const AdminDashboard = ({ products, setProducts }) => {
                   <div className='pr-2 space-y-4 overflow-y-auto max-h-175 custom-scroll'>
                     {filteredProducts.map((product) => (
                       <div
-                        key={product.id}
+                        key={product._id || product.id}
                         className='group flex gap-5 bg-zinc-800/30 p-5 rounded-xl border border-zinc-700/30 hover:border-[#c9a961]/40 hover:bg-zinc-800/50 transition-all duration-300'
                       >
                         <img
@@ -396,7 +411,7 @@ const AdminDashboard = ({ products, setProducts }) => {
                               </button>
                               <button
                                 type='button'
-                                onClick={() => handleDelete(product.id)}
+                                onClick={() => handleDelete(product._id || product.id)}
                                 className='text-sm transition-all opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-400'
                               >
                                 <i className="fa fa-times"></i>
