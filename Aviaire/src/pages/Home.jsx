@@ -1,5 +1,5 @@
 import bgvideo from '../assets/bgvideo.mp4'
-import logo from '../assets/logo.png'
+import logo from '../assets/Logo.png'
 import { Link } from 'react-router-dom'
 const Home = () => {
   return (
