@@ -14,7 +14,7 @@ import Register from './pages/Register.jsx'
 import Cart from './pages/Cart.jsx'
 import Admin from './pages/AdminDashboard.jsx'
 import AuthGuard from './auth/AuthGuard.jsx'
-import { apiUrl } from './config/api'
+import { getJson, postJson } from './services/apiClient'
 
 const SEED_PRODUCTS = [
   {
@@ -127,16 +127,9 @@ export function App() {
     }
     if (!token) return
 
-    const res = await fetch(apiUrl('cart'), {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    const data = await getJson('cart', { headers: { Authorization: `Bearer ${token}` } }).catch((e) => {
+      throw e
     })
-
-    // If backend returns non-JSON, avoid crashing JSON.parse
-    const data = await res.json().catch(() => ({}))
-    if (!res.ok) throw new Error(data?.message || 'Failed to load cart')
 
     const items = data?.data?.items || data?.items || []
     const normalized = items.map((x) => {
@@ -199,9 +192,8 @@ export function App() {
     const loadProductsAndCart = async () => {
       // 1) Load products (for consistent Mongo ids in UI)
       try {
-        const res = await fetch(apiUrl('products'), { method: 'GET' })
-        const data = await res.json().catch(() => null)
-        if (res.ok && Array.isArray(data?.data) && data.data.length > 0) {
+        const data = await getJson('products').catch(() => null)
+        if (Array.isArray(data?.data) && data.data.length > 0) {
           const normalized = data.data.map(normalizeProduct)
           setProducts(normalized)
           localStorage.setItem('aviaire_products', JSON.stringify(normalized))
@@ -273,27 +265,7 @@ export function App() {
       quantity: 1,
     }
 
-    const res = await fetch(apiUrl('cart/add'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(body),
-    })
-
-    // In case backend returns non-JSON on errors
-    let data
-    try {
-      data = await res.json()
-    } catch {
-      data = null
-    }
-
-    if (!res.ok) {
-      throw new Error(data?.message || `Failed to add to cart (HTTP ${res.status})`)
-    }
-
+    await postJson('cart/add', body, { headers: { Authorization: `Bearer ${token}` } })
     await loadCartFromBackend()
   }
 
@@ -310,18 +282,7 @@ export function App() {
       return
     }
 
-    const res = await fetch(apiUrl('cart/remove'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ productId: id }),
-    })
-
-    const data = await res.json()
-    if (!res.ok) throw new Error(data?.message || 'Failed to remove from cart')
-
+    await postJson('cart/remove', { productId: id }, { headers: { Authorization: `Bearer ${token}` } })
     await loadCartFromBackend()
   }
 
@@ -343,18 +304,7 @@ export function App() {
       return
     }
 
-    const res = await fetch(apiUrl('cart/quantity'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ productId: id, quantity: qty }),
-    })
-
-    const data = await res.json()
-    if (!res.ok) throw new Error(data?.message || 'Failed to update cart quantity')
-
+    await postJson('cart/quantity', { productId: id, quantity: qty }, { headers: { Authorization: `Bearer ${token}` } })
     await loadCartFromBackend()
   }
 

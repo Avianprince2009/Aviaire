@@ -2,7 +2,7 @@ import React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
-import { apiUrl } from '../config/api'
+import { postJson } from '../services/apiClient'
 const logo = "/logo.png";
 
 const Register = () => {
@@ -32,23 +32,8 @@ const Register = () => {
     onSubmit: async (values, { setSubmitting }) => {
       try {
         const { confirmPassword, ...payload } = values
-        const res = await fetch(apiUrl('register'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        })
-
-        let data = {}
-        try {
-          data = await res.json()
-        } catch {
-          data = {}
-        }
-
-        if (!res.ok) {
-          const details = typeof data === 'object' ? JSON.stringify(data) : String(data)
-          throw new Error(data?.message ? `${data.message} | ${details}` : `Registration failed | ${details}`)
-        }
+        const data = await postJson('register', payload)
+        if (!data) throw new Error('Registration failed: empty response')
 
         navigate('/login', { replace: true })
       } catch (error) {

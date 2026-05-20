@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
-import { apiUrl } from '../config/api'
+import { postJson } from '../services/apiClient'
 const logo = "/logo.png";
 
 const ForgotPassword = () => {
@@ -19,14 +19,8 @@ const ForgotPassword = () => {
     onSubmit: async (values, { setSubmitting, setStatus }) => {
       setLoading(true)
       try {
-        const res = await fetch(apiUrl('forgot-password'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: values.email }),
-        })
-
-        const data = await res.json().catch(() => ({}))
-        if (!res.ok) throw new Error(data?.message || 'Failed to request reset code')
+        const data = await postJson('forgot-password', { email: values.email })
+        if (!data) throw new Error('Failed to request reset code')
 
         // Move to reset step regardless of whether user exists (backend generic response)
         setEmailForReset(values.email)
@@ -60,19 +54,13 @@ const ForgotPassword = () => {
     onSubmit: async (values, { setSubmitting, setStatus, resetForm }) => {
       setLoading(true)
       try {
-        const res = await fetch(apiUrl('reset-password'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: emailForReset,
-            otp: values.otp,
-            newPassword: values.newPassword,
-            confirmPassword: values.confirmPassword,
-          }),
+        const data = await postJson('reset-password', {
+          email: emailForReset,
+          otp: values.otp,
+          newPassword: values.newPassword,
+          confirmPassword: values.confirmPassword,
         })
-
-        const data = await res.json().catch(() => ({}))
-        if (!res.ok) throw new Error(data?.message || 'Failed to reset password')
+        if (!data) throw new Error('Failed to reset password')
 
         setStatus({ message: 'Password updated successfully. Please log in.' })
         resetForm()

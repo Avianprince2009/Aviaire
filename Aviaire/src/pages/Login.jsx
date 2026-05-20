@@ -4,7 +4,7 @@ import { useFormik } from 'formik'
 import * as Yup from 'yup'
 import logo from '../assets/Logo.png'
 import { authStore } from '../auth/authStore'
-import { apiUrl } from '../config/api'
+import { postJson } from '../services/apiClient'
 
 const Login = () => {
   const navigate = useNavigate()
@@ -25,14 +25,8 @@ const Login = () => {
     }),
     onSubmit: async (values, { setSubmitting }) => {
       try {
-        const res = await fetch(apiUrl('login'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(values),
-        })
-
-        const data = await res.json()
-        if (!res.ok) throw new Error(data?.message || 'Login failed')
+        const data = await postJson('login', values)
+        if (!data) throw new Error('Login failed: empty response')
 
         // backend /login currently returns only { token }.
         // Use the decoded JWT payload to decide admin.
