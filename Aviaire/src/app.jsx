@@ -175,7 +175,16 @@ export function App() {
     }
   }
 
-  const authInfo = getAuthInfoFromToken()
+  const [authInfo, setAuthInfo] = useState(getAuthInfoFromToken())
+
+  useEffect(() => {
+    const authChangeHandler = () => {
+      setAuthInfo(getAuthInfoFromToken())
+    }
+
+    window.addEventListener('authChange', authChangeHandler)
+    return () => window.removeEventListener('authChange', authChangeHandler)
+  }, [])
 
   useEffect(() => {
     const success = localStorage.getItem('aviaire_login_success')

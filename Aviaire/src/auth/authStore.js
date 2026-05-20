@@ -33,11 +33,13 @@ export const authStore = {
     if (!token) throw new Error('token is required')
     localStorage.setItem(AUTH_KEYS.token, token)
     localStorage.setItem(AUTH_KEYS.role, role)
+    window.dispatchEvent(new Event('authChange'))
   },
 
   logout() {
     localStorage.removeItem(AUTH_KEYS.token)
     localStorage.removeItem(AUTH_KEYS.role)
+    window.dispatchEvent(new Event('authChange'))
   },
 }
 
