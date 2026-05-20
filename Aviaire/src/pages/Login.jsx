@@ -25,7 +25,8 @@ const Login = () => {
     onSubmit: async (values, { setSubmitting }) => {
       try {
 
-        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4008/api/v1'
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://aviaire-backend.onrender.com/api/v1'
+
 
         const res = await fetch(`${API_BASE}/login`, {
           method: 'POST',

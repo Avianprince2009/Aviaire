@@ -4,7 +4,8 @@ import { useFormik } from 'formik'
 import * as Yup from 'yup'
 import logo from '../assets/logo.png'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4008/api/v1'
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://aviaire-backend.onrender.com/api/v1'
+
 
 const ForgotPassword = () => {
   const navigate = useNavigate()
