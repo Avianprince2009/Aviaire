@@ -2,7 +2,7 @@ import React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
-import { postJson } from '../services/apiClient'
+import { postJson, getErrorMessage } from '../services/apiClient'
 const logo = "/logo.png";
 
 const Register = () => {
@@ -38,8 +38,7 @@ const Register = () => {
         navigate('/login', { replace: true })
       } catch (error) {
         console.error(error)
-        const message = error instanceof Error ? error.message : String(error)
-        alert(message)
+        alert(getErrorMessage(error, 'Registration failed.'))
       } finally {
         setSubmitting(false)
       }

@@ -1,5 +1,62 @@
+import axios from 'axios'
 import { apiUrl } from '../config/api'
 import { authStore } from '../auth/authStore'
+
+const DEFAULT_TIMEOUT = 15000
+
+function createApiError(message, meta = {}) {
+  const err = new Error(message || 'Request failed')
+  if (meta.status != null) err.status = meta.status
+  if (meta.response != null) err.response = meta.response
+  if (meta.isAbort) err.isAbort = true
+  if (meta.isTimeout) err.isTimeout = true
+  if (meta.originalError != null) err.originalError = meta.originalError
+  return err
+}
+
+export function getErrorMessage(error, fallback = 'An unexpected error occurred') {
+  if (!error) return fallback
+  if (typeof error === 'string') return error
+  if (error instanceof Error && error.message) return error.message
+  if (error.response?.data?.message) return String(error.response.data.message)
+  if (error.response?.message) return String(error.response.message)
+  if (typeof error.message === 'string') return error.message
+  if (error.status != null) return `Request failed with status ${error.status}`
+  return fallback
+}
+
+function isAbortError(error) {
+  return (
+    error?.name === 'AbortError' ||
+    error?.code === 'ERR_CANCELED' ||
+    String(error?.message).toLowerCase().includes('abort')
+  )
+}
+
+const axiosInstance = axios.create({ timeout: DEFAULT_TIMEOUT })
+
+axiosInstance.interceptors.request.use(
+  (config) => {
+    console.debug('[api] axios request', config.method, config.url)
+    return config
+  },
+  (error) => Promise.reject(error)
+)
+
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const message = getErrorMessage(error, 'Request failed. Please try again.')
+    return Promise.reject(
+      createApiError(message, {
+        status: error?.response?.status,
+        response: error?.response?.data,
+        isAbort: isAbortError(error),
+        originalError: error,
+      })
+    )
+  }
+)
 
 async function safeParseTextOrJson(response) {
   const text = await response.text()
@@ -7,8 +64,7 @@ async function safeParseTextOrJson(response) {
   if (contentType.includes('application/json') || /^\s*[\{\[]/.test(text)) {
     try {
       return JSON.parse(text)
-    } catch (e) {
-      // malformed JSON
+    } catch (error) {
       return null
     }
   }
@@ -16,7 +72,7 @@ async function safeParseTextOrJson(response) {
 }
 
 export async function request(path, opts = {}) {
-  const { method = 'GET', headers = {}, json, body, timeout = 15000, signal: externalSignal } = opts
+  const { method = 'GET', headers = {}, json, body, timeout = DEFAULT_TIMEOUT, signal: externalSignal } = opts
   const url = /^https?:\/\//i.test(path) ? path : apiUrl(path)
 
   const requestHeaders = {
@@ -29,8 +85,12 @@ export async function request(path, opts = {}) {
     if (token) {
       requestHeaders.Authorization = `Bearer ${token}`
     }
-  } catch (e) {
-    // ignore localStorage errors
+  } catch {
+    // ignore storage errors
+  }
+
+  if (json !== undefined) {
+    requestHeaders['Content-Type'] = 'application/json'
   }
 
   const fetchOpts = {
@@ -39,7 +99,6 @@ export async function request(path, opts = {}) {
   }
 
   if (json !== undefined) {
-    fetchOpts.headers['Content-Type'] = 'application/json'
     fetchOpts.body = JSON.stringify(json)
   } else if (body !== undefined) {
     fetchOpts.body = body
@@ -48,51 +107,60 @@ export async function request(path, opts = {}) {
   console.debug('[api] request', method, url)
 
   let timeoutId = null
-  try {
-    const controller = !externalSignal && typeof AbortController !== 'undefined' ? new AbortController() : null
-    if (controller) {
-      fetchOpts.signal = controller.signal
-      timeoutId = setTimeout(() => {
-        controller.abort()
-      }, timeout)
-    } else if (externalSignal) {
-      fetchOpts.signal = externalSignal
-    }
+  let controller = null
+  if (!externalSignal && typeof AbortController !== 'undefined') {
+    controller = new AbortController()
+  }
 
+  if (controller) {
+    fetchOpts.signal = controller.signal
+    timeoutId = setTimeout(() => controller.abort(), timeout)
+  } else if (externalSignal) {
+    fetchOpts.signal = externalSignal
+  }
+
+  try {
     const res = await fetch(url, fetchOpts)
     if (timeoutId) clearTimeout(timeoutId)
     const parsed = await safeParseTextOrJson(res)
 
     if (!res.ok) {
       const message = parsed?.message || parsed || `HTTP ${res.status}`
-      const err = new Error(message)
-      err.status = res.status
-      err.response = parsed
-      throw err
+      throw createApiError(message, { status: res.status, response: parsed })
     }
 
     return parsed
   } catch (fetchErr) {
     if (timeoutId) clearTimeout(timeoutId)
-    if (fetchErr && fetchErr.name === 'AbortError') {
-      fetchErr.isTimeout = true
-      fetchErr.isAbort = true
-      fetchErr.message = fetchErr.message || 'Request was aborted'
+
+    if (isAbortError(fetchErr)) {
+      throw createApiError('Request was aborted', {
+        isAbort: true,
+        isTimeout: true,
+        originalError: fetchErr,
+      })
     }
-    console.warn('[api] fetch failed, attempting axios fallback', fetchErr?.name, fetchErr?.message)
+
+    console.warn('[api] fetch failed, attempting axios fallback', fetchErr?.name, getErrorMessage(fetchErr))
+
     try {
-      const axios = (await import('axios')).default
-      const res = await axios({ url, method: method.toLowerCase(), data: json ?? body, headers: requestHeaders, timeout })
+      const res = await axiosInstance({
+        url,
+        method: method.toLowerCase(),
+        data: json ?? body,
+        headers: requestHeaders,
+        timeout,
+        signal: controller?.signal || externalSignal,
+      })
       return res.data
     } catch (axErr) {
       console.error('[api] axios fallback failed', axErr)
-      if (axErr.response) {
-        const err = new Error(axErr.response.data?.message || `HTTP ${axErr.response.status}`)
-        err.status = axErr.response.status
-        err.response = axErr.response.data
-        throw err
-      }
-      throw fetchErr
+      throw createApiError(getErrorMessage(axErr), {
+        status: axErr?.response?.status,
+        response: axErr?.response?.data,
+        isAbort: isAbortError(axErr),
+        originalError: axErr,
+      })
     }
   }
 }
@@ -102,4 +170,4 @@ export const postJson = (path, data, extra = {}) =>
 
 export const getJson = (path, extra = {}) => request(path, { method: 'GET', ...extra })
 
-export default { request, postJson, getJson }
+export default { request, postJson, getJson, getErrorMessage }

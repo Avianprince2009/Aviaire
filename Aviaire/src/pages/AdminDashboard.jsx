@@ -1,13 +1,14 @@
 import React, { useState } from 'react'
-import { postJson, request } from '../services/apiClient'
+import { postJson, request, getErrorMessage } from '../services/apiClient'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
 
 const AdminDashboard = ({ products, setProducts }) => {
   const [imagePreview, setImagePreview] = useState('')
-  const [showToast, setShowToast] = useState(false)
+  const [toast, setToast] = useState({ visible: false, type: 'success', message: '' })
   const [editingId, setEditingId] = useState(null)
   const [activeCollection, setActiveCollection] = useState('all')
+  const [loading, setLoading] = useState(false)
 
   const COLLECTIONS = [
     { key: 'all', label: 'All' },
@@ -18,6 +19,11 @@ const AdminDashboard = ({ products, setProducts }) => {
     { key: 'cartier', label: 'Cartier' },
   ]
 
+
+  const showToast = (message, type = 'success') => {
+    setToast({ visible: true, message, type })
+    setTimeout(() => setToast((current) => ({ ...current, visible: false })), 3200)
+  }
 
   const formik = useFormik({
     initialValues: {
@@ -46,45 +52,52 @@ const AdminDashboard = ({ products, setProducts }) => {
       ),
       description: Yup.string().max(300, 'Max 300 characters'),
     }),
-    onSubmit: async (values, { resetForm }) => {
+    onSubmit: async (values, { resetForm, setSubmitting }) => {
       const finalImage = values.imageFile ? imagePreview : values.imageUrl
+      const payload = {
+        name: values.name,
+        collection: values.collection,
+        price: Number(values.price),
+        imageUrl: finalImage,
+        description: values.description,
+      }
 
+      setLoading(true)
       try {
+        let response
         if (editingId) {
-          const payload = {
-            name: values.name,
-            collection: values.collection,
-            price: parseFloat(values.price),
-            imageUrl: finalImage,
-            description: values.description,
-          }
-          const res = await request(`products/${editingId}`, { method: 'PUT', json: payload })
-          const updated = res?.data || res
-          setProducts(prev => prev.map(p => (String(p._id || p.id) === String(editingId) ? updated : p)))
-          setShowToast(true)
-          setEditingId(null)
-          resetForm()
-          setImagePreview('')
-          setTimeout(() => setShowToast(false), 3000)
+          response = await request(`products/${editingId}`, { method: 'PUT', json: payload })
         } else {
-          const payload = {
-            name: values.name,
-            collection: values.collection,
-            price: parseFloat(values.price),
-            imageUrl: finalImage,
-            description: values.description,
-          }
-          const res = await postJson('products', payload)
-          const created = res?.data || res
-          setProducts(prev => [created, ...prev])
-          setShowToast(true)
-          resetForm()
-          setImagePreview('')
-          setTimeout(() => setShowToast(false), 3000)
+          response = await postJson('products', payload)
         }
-      } catch (e) {
-        console.error('Product save failed', e)
-        alert(e.message || 'Failed to save product')
+
+        const item = response?.data || response
+        if (!item || typeof item !== 'object') {
+          throw new Error('Unexpected server response when saving the product.')
+        }
+
+        if (editingId) {
+          setProducts((prev) =>
+            prev.map((product) =>
+              String(product._id || product.id) === String(editingId) ? item : product
+            )
+          )
+          showToast('Product updated successfully.', 'success')
+          setEditingId(null)
+        } else {
+          setProducts((prev) => [item, ...prev])
+          showToast('Product added successfully.', 'success')
+        }
+
+        resetForm()
+        setImagePreview('')
+      } catch (error) {
+        const message = getErrorMessage(error, 'Failed to save product.')
+        console.error('Product save failed', error)
+        showToast(message, 'error')
+      } finally {
+        setLoading(false)
+        setSubmitting(false)
       }
     },
   })
@@ -109,17 +122,19 @@ const AdminDashboard = ({ products, setProducts }) => {
     setImagePreview(value)
   }
 
-  const handleDelete = (id) => {
-    // delete on backend then update UI
-    (async () => {
-      try {
-        await request(`products/${id}`, { method: 'DELETE' })
-        setProducts(prev => prev.filter(p => String(p._id || p.id) !== String(id)))
-      } catch (e) {
-        console.error('Delete failed', e)
-        alert(e.message || 'Failed to delete')
-      }
-    })()
+  const handleDelete = async (id) => {
+    setLoading(true)
+    try {
+      await request(`products/${id}`, { method: 'DELETE' })
+      setProducts((prev) => prev.filter((product) => String(product._id || product.id) !== String(id)))
+      showToast('Product deleted successfully.', 'success')
+    } catch (error) {
+      const message = getErrorMessage(error, 'Failed to delete product.')
+      console.error('Delete failed', error)
+      showToast(message, 'error')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleEdit = (product) => {
@@ -146,9 +161,16 @@ const AdminDashboard = ({ products, setProducts }) => {
   return (
     <div className='bg-[#0a0a0a] text-white min-h-screen font-sans mt-16'>
 
-      {showToast && (
-        <div className='fixed top-6 right-6 z-50 bg-[#c9a961] text-black px-6 py-3 rounded shadow-lg animate-in fade-in slide-in-from-top-2'>
-          <i className="mr-2 fa fa-check-circle"></i>{editingId ? 'Watch updated' : 'Watch added to collection'}
+      {toast.visible && (
+        <div
+          className={`fixed top-6 right-6 z-50 px-6 py-3 rounded shadow-lg animate-in fade-in slide-in-from-top-2 ${
+            toast.type === 'success'
+              ? 'bg-[#c9a961] text-black'
+              : 'bg-red-500 text-white'
+          }`}
+        >
+          <i className={`mr-2 fa ${toast.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}`} />
+          {toast.message}
         </div>
       )}
 
@@ -314,9 +336,16 @@ const AdminDashboard = ({ products, setProducts }) => {
                 )}
                 <button
                   type='submit'
-                  className='w-full bg-linear-to-r from-[#c9a961] to-[#b89852] text-black py-3.5 rounded-lg font-medium hover:shadow-lg hover:shadow-[#c9a961]/20 hover:scale-[1.02] mt-8 transition-all duration-300 uppercase tracking-wider text-sm'
+                  disabled={formik.isSubmitting || loading}
+                  className='w-full bg-linear-to-r from-[#c9a961] to-[#b89852] text-black py-3.5 rounded-lg font-medium hover:shadow-lg hover:shadow-[#c9a961]/20 hover:scale-[1.02] mt-8 transition-all duration-300 uppercase tracking-wider text-sm disabled:opacity-60 disabled:cursor-not-allowed'
                 >
-                  <i className={`mr-2 fa ${editingId ? 'fa-save' : 'fa-plus'}`}></i>{editingId ? 'Update Timepiece' : 'Register Timepiece'}
+                  <i className={`mr-2 fa ${editingId ? 'fa-save' : 'fa-plus'}`}></i>
+                  {loading || formik.isSubmitting
+                    ? editingId
+                      ? 'Updating...' : 'Saving...'
+                    : editingId
+                    ? 'Update Timepiece'
+                    : 'Register Timepiece'}
                 </button>
               </form>
             </div>

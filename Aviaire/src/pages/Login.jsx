@@ -4,7 +4,7 @@ import { useFormik } from 'formik'
 import * as Yup from 'yup'
 import logo from '../assets/Logo.png'
 import { authStore } from '../auth/authStore'
-import { postJson } from '../services/apiClient'
+import { postJson, getErrorMessage } from '../services/apiClient'
 
 const Login = () => {
   const navigate = useNavigate()
@@ -61,9 +61,9 @@ const Login = () => {
         localStorage.setItem('aviaire_login_success', '1')
 
         navigate('/', { replace: true })
-      } catch (e) {
-        console.error(e)
-        alert(e.message)
+      } catch (error) {
+        console.error(error)
+        alert(getErrorMessage(error, 'Login failed.'))
       } finally {
         setSubmitting(false)
       }
