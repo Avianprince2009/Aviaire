@@ -1,4 +1,5 @@
 import { apiUrl } from '../config/api'
+import { authStore } from '../auth/authStore'
 
 async function safeParseTextOrJson(response) {
   const text = await response.text()
@@ -21,6 +22,18 @@ export async function request(path, opts = {}) {
   const fetchOpts = {
     method,
     headers: { ...headers },
+  }
+
+  // attach auth token automatically when available
+  try {
+    const token = authStore.getToken()
+    if (token) {
+      fetchOpts.headers['Authorization'] = `Bearer ${token}`
+      // also ensure the headers object passed to axios fallback includes the token
+      headers = { ...headers, Authorization: `Bearer ${token}` }
+    }
+  } catch (e) {
+    // ignore storage errors
   }
 
   if (json !== undefined) {
