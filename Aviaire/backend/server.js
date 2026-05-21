@@ -27,8 +27,13 @@ app.use(
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    optionsSuccessStatus: 200,
   })
 )
+
+// For debugging CORS issues, respond to preflight explicitly (safe no-op)
+app.options('*', cors())
 
 // Simple healthcheck
 app.get('/api/v1/health', (req, res) => res.json({ ok: true }))
