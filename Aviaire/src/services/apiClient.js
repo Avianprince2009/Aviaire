@@ -16,24 +16,26 @@ async function safeParseTextOrJson(response) {
 }
 
 export async function request(path, opts = {}) {
-  const { method = 'GET', headers = {}, json, body, timeout = 15000 } = opts
+  const { method = 'GET', headers = {}, json, body, timeout = 15000, signal: externalSignal } = opts
   const url = /^https?:\/\//i.test(path) ? path : apiUrl(path)
 
-  const fetchOpts = {
-    method,
-    headers: { ...headers },
+  const requestHeaders = {
+    Accept: 'application/json',
+    ...headers,
   }
 
-  // attach auth token automatically when available
   try {
     const token = authStore.getToken()
     if (token) {
-      fetchOpts.headers['Authorization'] = `Bearer ${token}`
-      // also ensure the headers object passed to axios fallback includes the token
-      headers = { ...headers, Authorization: `Bearer ${token}` }
+      requestHeaders.Authorization = `Bearer ${token}`
     }
   } catch (e) {
-    // ignore storage errors
+    // ignore localStorage errors
+  }
+
+  const fetchOpts = {
+    method,
+    headers: requestHeaders,
   }
 
   if (json !== undefined) {
@@ -47,16 +49,14 @@ export async function request(path, opts = {}) {
 
   let timeoutId = null
   try {
-    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null
+    const controller = !externalSignal && typeof AbortController !== 'undefined' ? new AbortController() : null
     if (controller) {
       fetchOpts.signal = controller.signal
       timeoutId = setTimeout(() => {
-        try {
-          controller.abort()
-        } catch (e) {
-          // ignore
-        }
+        controller.abort()
       }, timeout)
+    } else if (externalSignal) {
+      fetchOpts.signal = externalSignal
     }
 
     const res = await fetch(url, fetchOpts)
@@ -74,15 +74,24 @@ export async function request(path, opts = {}) {
     return parsed
   } catch (fetchErr) {
     if (timeoutId) clearTimeout(timeoutId)
-    // mark timeout specifically
-    if (fetchErr && fetchErr.name === 'AbortError') fetchErr.isTimeout = true
-    console.warn('[api] fetch failed, attempting axios fallback', fetchErr && fetchErr.name, fetchErr && fetchErr.message)
+    if (fetchErr && fetchErr.name === 'AbortError') {
+      fetchErr.isTimeout = true
+      fetchErr.isAbort = true
+      fetchErr.message = fetchErr.message || 'Request was aborted'
+    }
+    console.warn('[api] fetch failed, attempting axios fallback', fetchErr?.name, fetchErr?.message)
     try {
       const axios = (await import('axios')).default
-      const res = await axios({ url, method: method.toLowerCase(), data: json ?? body, headers })
+      const res = await axios({ url, method: method.toLowerCase(), data: json ?? body, headers: requestHeaders, timeout })
       return res.data
     } catch (axErr) {
       console.error('[api] axios fallback failed', axErr)
+      if (axErr.response) {
+        const err = new Error(axErr.response.data?.message || `HTTP ${axErr.response.status}`)
+        err.status = axErr.response.status
+        err.response = axErr.response.data
+        throw err
+      }
       throw fetchErr
     }
   }
