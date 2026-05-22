@@ -254,6 +254,11 @@ export function App() {
       return
     }
 
+    if (!token) {
+      showAddedToCartModal('Added to cart')
+      return
+    }
+
 
     // Backend expects Mongo product _id in `productId`.
     // Seed/seeded UI ids are numeric (1/2/3) and do NOT exist in Mongo.
