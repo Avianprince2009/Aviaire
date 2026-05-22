@@ -23,7 +23,7 @@ const Login = () => {
         .min(6, 'Password must be at least 6 characters')
         .required('Password is required'),
     }),
-    onSubmit: async (values, { setSubmitting }) => {
+    onSubmit: async (values, { setSubmitting, setStatus }) => {
       try {
         const data = await postJson('login', values)
         if (!data) throw new Error('Login failed: empty response')
@@ -63,7 +63,7 @@ const Login = () => {
         navigate('/', { replace: true })
       } catch (error) {
         console.error(error)
-        alert(getErrorMessage(error, 'Login failed.'))
+        setStatus({ error: getErrorMessage(error, 'Login failed.') })
       } finally {
         setSubmitting(false)
       }
@@ -86,6 +86,9 @@ const Login = () => {
           </p>
 
           <form onSubmit={formik.handleSubmit} className="space-y-6">
+              {formik.status?.error && (
+                <p className="mt-2 text-xs text-red-400 text-center">{formik.status.error}</p>
+              )}
             <div>
               <label className="block text-white/60 text-xs tracking-[0.2em] uppercase mb-3">
                 E-mail

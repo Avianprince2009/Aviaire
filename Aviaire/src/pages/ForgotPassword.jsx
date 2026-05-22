@@ -27,7 +27,8 @@ const ForgotPassword = () => {
         setStep(2)
         setStatus({ message: 'Check your email for the OTP code.' })
       } catch (e) {
-        setStatus({ message: e.message })
+        console.error(e)
+        setStatus({ message: 'Something went wrong. Please try again.' })
       } finally {
         setSubmitting(false)
         setLoading(false)
@@ -67,7 +68,8 @@ const ForgotPassword = () => {
         setStep(1)
         navigate('/login', { replace: true })
       } catch (e) {
-        setStatus({ message: e.message })
+        console.error(e)
+        setStatus({ message: 'Something went wrong. Please try again.' })
       } finally {
         setSubmitting(false)
         setLoading(false)
