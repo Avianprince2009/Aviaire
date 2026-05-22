@@ -73,12 +73,12 @@ const Collections = ({ products, addToCart }) => {
           </div>
 
           {/* Collection chips */}
-          <div className="flex flex-wrap justify-center gap-3">
+          <div className="flex flex-wrap justify-center gap-2">
             {COLLECTIONS.map((col) => (
               <button
                 key={col.key}
                 onClick={() => setActiveFilter(col.key)}
-                className={`px-5 py-2 rounded-full text-xs tracking-widest uppercase transition-all duration-300 border ${
+                className={`px-3 py-1.5 rounded-full text-[10px] sm:text-xs tracking-widest uppercase transition-all duration-300 border ${
                   activeFilter === col.key
                     ? 'bg-[#C9A961] text-black border-[#C9A961]'
                     : 'bg-transparent text-zinc-400 border-zinc-700 hover:border-[#C9A961] hover:text-[#C9A961]'
@@ -88,6 +88,7 @@ const Collections = ({ products, addToCart }) => {
               </button>
             ))}
           </div>
+
         </div>
       </div>
 

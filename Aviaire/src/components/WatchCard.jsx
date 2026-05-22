@@ -3,7 +3,8 @@ import React from 'react'
 const WatchCard = ({ product, onDelete, onEdit, onAddToCart }) => {
   return (
     <div className='group bg-zinc-900/40 backdrop-blur-xl border border-[#c9a961]/15 rounded-xl shadow-2xl shadow-black/50 hover:border-[#c9a961]/40 hover:shadow-[#c9a961]/10 transition-all duration-300 overflow-hidden'>
-      <div className='relative h-56 bg-white overflow-hidden'>
+      <div className='relative h-44 sm:h-52 bg-white overflow-hidden'>
+
         <img
           src={product.imageUrl}
           alt={product.name}
@@ -16,9 +17,10 @@ const WatchCard = ({ product, onDelete, onEdit, onAddToCart }) => {
         </div>
       </div>
 
-      <div className='p-6'>
-        <div className='mb-4'>
-          <h3 className='font-serif text-xl text-[#c9a961] font-light mb-2 leading-tight line-clamp-1'>
+      <div className='p-4 sm:p-6'>
+        <div className='mb-3 sm:mb-4'>
+          <h3 className='font-serif text-lg sm:text-xl text-[#c9a961] font-light mb-2 leading-tight line-clamp-1'>
+
             {product.name}
           </h3>
           <p className='text-xs tracking-wider uppercase text-zinc-500'>
