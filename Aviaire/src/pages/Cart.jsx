@@ -87,9 +87,12 @@ const Cart = ({ cart, removeFromCart, updateCartQty }) => {
                   </p>
                 </div>
               </div>
-              <button className="w-full mt-6 bg-[#c9a961] text-black py-4 rounded-lg font-medium hover:bg-[#b89852] transition-all uppercase tracking-wider text-sm">
-                <i className="mr-2 fa fa-lock"></i>Proceed to Checkout
-              </button>
+              <Link
+                to="/checkout"
+                className="w-full mt-6 bg-[#c9a961] text-black py-4 rounded-lg font-medium hover:bg-[#b89852] transition-all uppercase tracking-wider text-sm inline-flex items-center justify-center gap-2"
+              >
+                <i className="mr-2 fa fa-lock" />Proceed to Checkout
+              </Link>
             </div>
           </div>
         )}

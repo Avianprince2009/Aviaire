@@ -12,6 +12,7 @@ import ForgotPassword from './pages/ForgotPassword.jsx'
 import Footer from './components/Footer.jsx'
 import Register from './pages/Register.jsx'
 import Cart from './pages/Cart.jsx'
+import Checkout from './pages/Checkout.jsx'
 import Admin from './pages/AdminDashboard.jsx'
 import AuthGuard from './auth/AuthGuard.jsx'
 import { getJson, postJson } from './services/apiClient'
@@ -344,6 +345,14 @@ export function App() {
           element={
             <AuthGuard requireAuth>
               <Cart cart={cart} removeFromCart={removeFromCart} updateCartQty={updateCartQty} />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/checkout"
+          element={
+            <AuthGuard requireAuth>
+              <Checkout cart={cart} />
             </AuthGuard>
           }
         />
