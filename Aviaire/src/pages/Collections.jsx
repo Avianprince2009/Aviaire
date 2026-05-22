@@ -32,10 +32,11 @@ const Collections = ({ products, addToCart }) => {
   return (
     <div className="min-h-screen bg-[#111111] text-white pt-24 pb-16 px-6 md:px-12">
       {/* Header */}
-      <div className="mx-auto mb-8 max-w-7xl">
-        <h1 className="text-4xl md:text-5xl font-serif font-light text-[#C9A961] text-center tracking-wide mb-4">
+      <div className="mx-auto mb-6 sm:mb-8 max-w-7xl">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-light text-[#C9A961] text-center tracking-wide mb-3">
           Our Collections
         </h1>
+
         <p className="max-w-2xl mx-auto text-sm text-center text-zinc-400 md:text-base">
           Discover our curated selection of exquisite timepieces, each representing the pinnacle of horological artistry.
         </p>

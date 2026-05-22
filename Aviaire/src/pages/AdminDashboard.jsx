@@ -174,9 +174,10 @@ const AdminDashboard = ({ products, setProducts }) => {
         </div>
       )}
 
-      <div className='p-8 mx-auto max-w-8xl'>
-        <div className='mb-16 border-b border-[#c9a961]/10 pb-8'>
-          <div className='flex items-center gap-4'>
+      <div className='px-4 sm:px-6 lg:px-8 py-6 mx-auto max-w-8xl'>
+        <div className='mb-10 sm:mb-16 border-b border-[#c9a961]/10 pb-6 sm:pb-8'>
+          <div className='flex items-center gap-3'>
+
             <div className='w-12 h-12 rounded-full bg-linear-to-br from-[#c9a961] to-[#8b7544] flex items-center justify-center'>
               <i className="text-xl text-black fa fa-crown"></i>
             </div>
@@ -189,9 +190,10 @@ const AdminDashboard = ({ products, setProducts }) => {
 
         <div className='grid grid-cols-1 gap-10 lg:grid-cols-5'>
           <div className='lg:col-span-2'>
-            <div className='bg-zinc-900/40 backdrop-blur-xl border border-[#c9a961]/15 p-8 rounded-xl shadow-2xl shadow-black/50 h-fit sticky top-8'>
-              <div className='flex items-center gap-3 mb-8'>
+            <div className='bg-zinc-900/40 backdrop-blur-xl border border-[#c9a961]/15 p-4 sm:p-6 lg:p-8 rounded-xl shadow-2xl shadow-black/50 h-fit lg:sticky lg:top-8'>
+              <div className='flex items-center gap-3 mb-6 sm:mb-8'>
                 <div className='w-10 h-10 rounded-lg bg-[#c9a961]/10 flex items-center justify-center'>
+
                   <i className={`text-[#c9a961] fa ${editingId ? 'fa-pen' : 'fa-plus'}`}></i>
                 </div>
                 <h2 className='font-serif text-2xl font-light'>{editingId ? 'Edit Entry' : 'Create Entry'}</h2>
@@ -402,7 +404,8 @@ const AdminDashboard = ({ products, setProducts }) => {
                 }
 
                 return (
-                  <div className='pr-2 space-y-4 overflow-y-auto max-h-175 custom-scroll'>
+                  <div className='pr-2 space-y-4 overflow-y-auto max-h-[60vh] lg:max-h-[70vh] custom-scroll'>
+
                     {filteredProducts.map((product) => (
                       <div
                         key={product._id || product.id}
@@ -434,16 +437,18 @@ const AdminDashboard = ({ products, setProducts }) => {
                               <button
                                 type='button'
                                 onClick={() => handleEdit(product)}
-                                className='text-sm transition-all opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-[#c9a961]'
+                                className='text-sm transition-all opacity-100 lg:opacity-0 lg:group-hover:opacity-100 text-zinc-600 hover:text-[#c9a961]'
                                 title='Edit'
                               >
+
                                 <i className="fa fa-pen"></i>
                               </button>
                               <button
                                 type='button'
                                 onClick={() => handleDelete(product._id || product.id)}
-                                className='text-sm transition-all opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-400'
+                                className='text-sm transition-all opacity-100 lg:opacity-0 lg:group-hover:opacity-100 text-zinc-600 hover:text-red-400'
                               >
+
                                 <i className="fa fa-times"></i>
                               </button>
                             </div>
