@@ -2,7 +2,7 @@ import axios from 'axios'
 import { apiUrl } from '../config/api'
 import { authStore } from '../auth/authStore'
 
-const DEFAULT_TIMEOUT = 15000
+const DEFAULT_TIMEOUT = 6000
 
 function createApiError(message, meta = {}) {
   const err = new Error(message || 'Request failed')
@@ -64,7 +64,7 @@ async function safeParseTextOrJson(response) {
   if (contentType.includes('application/json') || /^\s*[\{\[]/.test(text)) {
     try {
       return JSON.parse(text)
-    } catch (error) {
+    } catch {
       return null
     }
   }
@@ -72,7 +72,15 @@ async function safeParseTextOrJson(response) {
 }
 
 export async function request(path, opts = {}) {
-  const { method = 'GET', headers = {}, json, body, timeout = DEFAULT_TIMEOUT, signal: externalSignal } = opts
+  const {
+    method = 'GET',
+    headers = {},
+    json,
+    body,
+    timeout = DEFAULT_TIMEOUT,
+    signal: externalSignal,
+  } = opts
+
   const url = /^https?:\/\//i.test(path) ? path : apiUrl(path)
 
   const requestHeaders = {
@@ -82,9 +90,7 @@ export async function request(path, opts = {}) {
 
   try {
     const token = authStore.getToken()
-    if (token) {
-      requestHeaders.Authorization = `Bearer ${token}`
-    }
+    if (token) requestHeaders.Authorization = `Bearer ${token}`
   } catch {
     // ignore storage errors
   }
@@ -104,10 +110,12 @@ export async function request(path, opts = {}) {
     fetchOpts.body = body
   }
 
+  const t0 = typeof performance !== 'undefined' ? performance.now() : Date.now()
   console.debug('[api] request', method, url)
 
   let timeoutId = null
   let controller = null
+
   if (!externalSignal && typeof AbortController !== 'undefined') {
     controller = new AbortController()
   }
@@ -122,6 +130,7 @@ export async function request(path, opts = {}) {
   try {
     const res = await fetch(url, fetchOpts)
     if (timeoutId) clearTimeout(timeoutId)
+
     const parsed = await safeParseTextOrJson(res)
 
     if (!res.ok) {
@@ -129,6 +138,8 @@ export async function request(path, opts = {}) {
       throw createApiError(message, { status: res.status, response: parsed })
     }
 
+    const dt = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0
+    console.debug('[api] success', method, url, `${Math.round(dt)}ms`)
     return parsed
   } catch (fetchErr) {
     if (timeoutId) clearTimeout(timeoutId)
@@ -154,7 +165,6 @@ export async function request(path, opts = {}) {
       })
       return res.data
     } catch (axErr) {
-      console.error('[api] axios fallback failed', axErr)
       throw createApiError(getErrorMessage(axErr), {
         status: axErr?.response?.status,
         response: axErr?.response?.data,
@@ -165,9 +175,8 @@ export async function request(path, opts = {}) {
   }
 }
 
-export const postJson = (path, data, extra = {}) =>
-  request(path, { method: 'POST', json: data, ...extra })
-
+export const postJson = (path, data, extra = {}) => request(path, { method: 'POST', json: data, ...extra })
 export const getJson = (path, extra = {}) => request(path, { method: 'GET', ...extra })
 
 export default { request, postJson, getJson, getErrorMessage }
+

@@ -200,25 +200,30 @@ export function App() {
 
   useEffect(() => {
     const loadProductsAndCart = async () => {
-      // 1) Load products (for consistent Mongo ids in UI)
-      try {
-        const data = await getJson('products').catch(() => null)
-        if (Array.isArray(data?.data) && data.data.length > 0) {
-          const normalized = data.data.map(normalizeProduct)
-          setProducts(normalized)
-          localStorage.setItem('aviaire_products', JSON.stringify(normalized))
+      // Run both requests in parallel to keep the UI responsive.
+      const productsPromise = (async () => {
+        try {
+          const data = await getJson('products').catch(() => null)
+          if (Array.isArray(data?.data) && data.data.length > 0) {
+            const normalized = data.data.map(normalizeProduct)
+            setProducts(normalized)
+            localStorage.setItem('aviaire_products', JSON.stringify(normalized))
+          }
+        } catch {
+          // ignore and keep cached/seeded products
         }
-      } catch {
-        // ignore and keep cached/seeded products
-      }
+      })()
 
-      // 2) Always attempt to load cart from backend if token exists
-      await loadCartFromBackend().catch(() => {})
+      const cartPromise = loadCartFromBackend().catch(() => {})
+
+      await Promise.allSettled([productsPromise, cartPromise])
     }
+
 
     loadProductsAndCart()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
 
   const [cartModal, setCartModal] = useState({ open: false, message: '' })
 
