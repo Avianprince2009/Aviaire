@@ -220,6 +220,16 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const [cartModal, setCartModal] = useState({ open: false, message: '' })
+
+  const showAddedToCartModal = (message = 'Added to cart') => {
+    setCartModal({ open: true, message })
+    window.setTimeout(() => {
+      setCartModal((prev) => ({ ...prev, open: false }))
+    }, 1400)
+  }
+
+
   const addToCart = async (product) => {
     const tokenKey = 'aviaire_auth_token'
     let token = localStorage.getItem(tokenKey)
@@ -228,7 +238,7 @@ export function App() {
       token = null
     }
 
-    if (!token) {
+      if (!token) {
       // If user isn't logged in, we can't persist to MongoDB.
       // We'll keep local in-memory cart only for current session.
       setCart((prev) => {
@@ -240,8 +250,10 @@ export function App() {
         }
         return [...prev, { ...product, qty: 1 }]
       })
+      showAddedToCartModal('Added to cart')
       return
     }
+
 
     // Backend expects Mongo product _id in `productId`.
     // Seed/seeded UI ids are numeric (1/2/3) and do NOT exist in Mongo.
@@ -366,6 +378,26 @@ export function App() {
         />
         <Route path='*' element={<NotFound />} />
       </Routes>
+      {cartModal.open && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/60"
+            onClick={() => setCartModal({ open: false, message: '' })}
+          />
+          <div className="relative w-[92%] max-w-md rounded-2xl border border-[#C9A961]/25 bg-[#0b0b0b]/90 backdrop-blur-xl shadow-2xl shadow-black/60 p-6">
+            <div className="w-14 h-14 mx-auto rounded-full bg-[#C9A961]/15 border border-[#C9A961]/30 flex items-center justify-center">
+              <i className="fa fa-check text-[#C9A961] text-2xl" aria-hidden="true" />
+            </div>
+            <h3 className="mt-4 text-center text-xl font-serif font-light text-white">
+              {cartModal.message}
+            </h3>
+            <p className="mt-2 text-center text-xs tracking-widest uppercase text-zinc-400">
+              Aviaire
+            </p>
+          </div>
+        </div>
+      )}
+
       <Footer />
     </BrowserRouter>
   )
