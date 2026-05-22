@@ -1,8 +1,7 @@
-# TODO - Checkout backend endpoint
+# TODO - Admin crown navigation
 
-- [ ] Inspect current backend routing structure (router + app mounting)
-- [ ] Add checkout controller + route in backend (../Backend)
-- [ ] Mount checkout routes under /api/v1 in backend/server.js
-- [ ] Update frontend Checkout.jsx to call POST /api/v1/checkout (replace demo flow)
-- [ ] Run quick lint/test/build commands (if available)
+- [x] Inspect existing Navbar and auth storage / route protection.
+- [x] Add admin-only crown icon button/link in `Aviaire/src/components/Navbar.jsx`.
+- [x] Style crown icon with premium gold aesthetic (without changing existing navbar layout for normal users).
+- [ ] Verify `/admin` route remains protected via existing `AuthGuard requireAdmin`.
 

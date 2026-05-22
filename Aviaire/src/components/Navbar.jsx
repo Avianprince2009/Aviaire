@@ -3,6 +3,16 @@ import { Link } from 'react-router-dom'
 import logo from '../assets/Logo.png'
 
 const Navbar = ({ cartCount = 0, isLoggedIn = false, userEmail = null, onLogout }) => {
+  // Admin crown is shown only for admin users (localStorage-based).
+  // App persists role under `aviaire_auth_role`.
+  const role = (() => {
+    try {
+      return localStorage.getItem('aviaire_auth_role')
+    } catch {
+      return null
+    }
+  })()
+  const isAdmin = role === 'admin'
   const [isOpen, setIsOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
 
@@ -69,6 +79,22 @@ const Navbar = ({ cartCount = 0, isLoggedIn = false, userEmail = null, onLogout 
           </div>
         ) : (
           <Link to="/login" className="bi bi-person-circle text-[gold]"></Link>
+        )}
+
+        {isAdmin && (
+          <Link
+            to="/admin"
+            aria-label="Admin"
+            className="inline-flex items-center justify-center w-9 h-9 rounded-full border border-[#C9A961]/30 bg-[#C9A961]/10 hover:bg-[#C9A961]/25 transition-all duration-300"
+          >
+            <i
+              className="fa fa-crown text-[#C9A961] text-lg"
+              style={{
+                filter: 'drop-shadow(0 0 10px rgba(201,169,97,0.35))',
+                textShadow: '0 0 14px rgba(201,169,97,0.45)',
+              }}
+            />
+          </Link>
         )}
 
         <Link to="/cart" className="relative fas fa-shopping-bag text-[gold] text-xl">
