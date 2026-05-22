@@ -12,15 +12,27 @@ const COLLECTIONS = [
 
 const Collections = ({ products, addToCart }) => {
   const [activeFilter, setActiveFilter] = useState('all')
+  const [searchQuery, setSearchQuery] = useState('')
 
-  const filtered = activeFilter === 'all'
-    ? products
-    : products.filter(p => p.collection === activeFilter)
+  const collectionFiltered =
+    activeFilter === 'all'
+      ? products
+      : products.filter((p) => p.collection === activeFilter)
+
+  const q = searchQuery.trim().toLowerCase()
+
+  const filtered = q
+    ? collectionFiltered.filter((p) => {
+        const nameMatch = String(p?.name ?? '').toLowerCase().includes(q)
+        const collectionMatch = String(p?.collection ?? '').toLowerCase().includes(q)
+        return nameMatch || collectionMatch
+      })
+    : collectionFiltered
 
   return (
     <div className="min-h-screen bg-[#111111] text-white pt-24 pb-16 px-6 md:px-12">
       {/* Header */}
-      <div className="mx-auto mb-12 max-w-7xl">
+      <div className="mx-auto mb-8 max-w-7xl">
         <h1 className="text-4xl md:text-5xl font-serif font-light text-[#C9A961] text-center tracking-wide mb-4">
           Our Collections
         </h1>
@@ -29,22 +41,52 @@ const Collections = ({ products, addToCart }) => {
         </p>
       </div>
 
-      {/* Filter Bar */}
-      <div className="max-w-4xl mx-auto mb-12">
-        <div className="flex flex-wrap justify-center gap-3">
-          {COLLECTIONS.map(col => (
-            <button
-              key={col.key}
-              onClick={() => setActiveFilter(col.key)}
-              className={`px-5 py-2 rounded-full text-xs tracking-widest uppercase transition-all duration-300 border ${
-                activeFilter === col.key
-                  ? 'bg-[#C9A961] text-black border-[#C9A961]'
-                  : 'bg-transparent text-zinc-400 border-zinc-700 hover:border-[#C9A961] hover:text-[#C9A961]'
-              }`}
-            >
-              {col.label}
-            </button>
-          ))}
+      {/* Filter + Search */}
+      <div className="max-w-4xl mx-auto mb-10">
+        <div className="flex flex-col items-center gap-6">
+          {/* Search */}
+          <div className="w-full">
+            <label className="sr-only" htmlFor="collections-search">
+              Search collections
+            </label>
+            <div className="flex items-center gap-3 rounded-xl border border-zinc-700/60 bg-zinc-900/30 px-4 py-3">
+              <i className="fa fa-search text-[#C9A961]/70" aria-hidden="true"></i>
+              <input
+                id="collections-search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search watches (name or brand)"
+                className="w-full bg-transparent outline-none text-sm text-white placeholder:text-zinc-500"
+              />
+              {searchQuery.trim() && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="text-zinc-400 hover:text-white transition"
+                  aria-label="Clear search"
+                >
+                  <i className="fa fa-times" aria-hidden="true"></i>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Collection chips */}
+          <div className="flex flex-wrap justify-center gap-3">
+            {COLLECTIONS.map((col) => (
+              <button
+                key={col.key}
+                onClick={() => setActiveFilter(col.key)}
+                className={`px-5 py-2 rounded-full text-xs tracking-widest uppercase transition-all duration-300 border ${
+                  activeFilter === col.key
+                    ? 'bg-[#C9A961] text-black border-[#C9A961]'
+                    : 'bg-transparent text-zinc-400 border-zinc-700 hover:border-[#C9A961] hover:text-[#C9A961]'
+                }`}
+              >
+                {col.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -60,7 +102,7 @@ const Collections = ({ products, addToCart }) => {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map(product => (
+            {filtered.map((product) => (
               <WatchCard
                 key={product.id}
                 product={product}
