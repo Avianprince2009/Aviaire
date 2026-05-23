@@ -54,9 +54,14 @@ const Checkout = ({ cart = [] }) => {
   const [verifyingPayment, setVerifyingPayment] = useState(false)
 
   // Make sure Paystack popup reliably opens on every click.
-  // (Some react-paystack versions mount a new iframe only when `key` changes.)
+  // react-paystack opens the popup when its component is mounted.
   const triggerPaystack = () => {
     setPaystackInstanceKey((k) => k + 1)
+
+    // Fallback: if the popup button is rendered, click it.
+    // This prevents the “Place Order” button from appearing broken.
+    const el = document.querySelector('[data-paystack-button="true"]')
+    el?.click?.()
   }
 
   const getLoggedInEmail = () => {
@@ -356,11 +361,15 @@ const Checkout = ({ cart = [] }) => {
                 type="button"
                 disabled={submitting || verifyingPayment}
                 onClick={() => {
-                  // Use the hidden PaystackButton to open the popup.
-                  // react-paystack v6 supports this via the onSuccess/onClose callbacks above.
-                  // Trigger by dispatching a click event to the PaystackButton container.
-                  const el = document.querySelector('.paystack-hidden-button')
-                  el?.click?.()
+                  if (submitting || verifyingPayment) return
+
+                  const ok = window.confirm(
+                    `Confirm placing order?\n\nTotal: $${total.toLocaleString()}`
+                  )
+                  if (!ok) return
+
+                  // Trigger Paystack popup reliably.
+                  triggerPaystack()
                 }}
                 className="w-full bg-[#C9A961] text-black py-4 rounded-lg font-medium hover:bg-[#b89852] transition-all uppercase tracking-wider text-sm disabled:opacity-60"
               >
