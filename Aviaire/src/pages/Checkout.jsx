@@ -1,5 +1,8 @@
 import React, { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { PaystackButton } from 'react-paystack'
+import { postJson } from '../services/apiClient'
+import { authStore } from '../auth/authStore'
 
 const Checkout = ({ cart = [] }) => {
   const navigate = useNavigate()
@@ -18,6 +21,8 @@ const Checkout = ({ cart = [] }) => {
   const [submitting, setSubmitting] = useState(false)
   const [orderSuccess, setOrderSuccess] = useState(null)
   const [error, setError] = useState(null)
+  const [paystackInstanceKey, setPaystackInstanceKey] = useState(0)
+
 
   const total = useMemo(() => {
     return cart.reduce((sum, item) => sum + item.price * item.qty, 0)
@@ -46,6 +51,79 @@ const Checkout = ({ cart = [] }) => {
     return null
   }
 
+  const [verifyingPayment, setVerifyingPayment] = useState(false)
+
+  // Make sure Paystack popup reliably opens on every click.
+  // (Some react-paystack versions mount a new iframe only when `key` changes.)
+  const triggerPaystack = () => {
+    setPaystackInstanceKey((k) => k + 1)
+  }
+
+  const getLoggedInEmail = () => {
+    // Prefer logged-in email from JWT payload when available
+    try {
+      const token = authStore?.getToken?.()
+      if (token) {
+        const parts = String(token).split('.')
+        if (parts.length === 3) {
+          const payload = JSON.parse(
+            atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'))
+          )
+          if (payload?.email) return payload.email
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return form.email
+  }
+
+  const paystackConfig = useMemo(() => {
+    const amountKobo = Math.round(Number(total) * 100)
+    const email = getLoggedInEmail()
+
+    return {
+      reference: `AV-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`,
+      email,
+      amount: amountKobo,
+      publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
+      text: 'Paystack Button',
+      onSuccess: async (response) => {
+        try {
+          setVerifyingPayment(true)
+          setError(null)
+
+          const verifyResp = await postJson('paystack/verify', {
+            reference: response.reference,
+            fullName: form.fullName,
+            email,
+            phone: form.phone,
+            address1: form.address1,
+            city: form.city,
+            country: form.country,
+            postalCode: form.postalCode,
+          })
+
+          const data = verifyResp?.data || {}
+
+          setOrderSuccess({
+            id: data?.orderId,
+            placedAt: data?.placedAt,
+            total: data?.total,
+          })
+        } catch (err) {
+          setError(err?.message || 'Payment verification failed.')
+        } finally {
+          setVerifyingPayment(false)
+        }
+      },
+      onClose: () => {
+        setError('Payment was cancelled. Please try again.')
+      },
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [total, form, paystackInstanceKey, triggerPaystack])
+
   const onSubmit = async (e) => {
     e.preventDefault()
     setError(null)
@@ -63,27 +141,15 @@ const Checkout = ({ cart = [] }) => {
 
     setSubmitting(true)
     try {
-      const { postJson } = await import('../services/apiClient.js')
-
-      const payload = {
-        ...form,
-        // Backend reads cart items from DB; sending cart is optional.
-      }
-
-      const resp = await postJson('checkout', payload)
-      const data = resp?.data || {}
-
-      setOrderSuccess({
-        id: data.orderId,
-        placedAt: data.placedAt,
-        total: data.total,
-      })
-    } catch (err) {
-      setError(err?.message || 'Checkout failed. Please try again.')
+      triggerPaystack()
     } finally {
+      // Let Paystack callbacks control the actual loading state.
       setSubmitting(false)
     }
   }
+
+
+
 
   if (orderSuccess) {
     return (
@@ -97,9 +163,9 @@ const Checkout = ({ cart = [] }) => {
           </p>
 
           <div className="bg-zinc-900/40 backdrop-blur-xl border border-[#c9a961]/15 p-6 md:p-8 rounded-xl">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
               <div>
-                <p className="text-xs tracking-wider uppercase text-zinc-500 mb-2">Order ID</p>
+                <p className="mb-2 text-xs tracking-wider uppercase text-zinc-500">Order ID</p>
                 <p className="text-3xl font-light text-white">
                   <span className="text-[#c9a961]">{orderSuccess.id}</span>
                 </p>
@@ -110,14 +176,14 @@ const Checkout = ({ cart = [] }) => {
             </div>
 
             <div className="mt-6 pt-6 border-t border-[#c9a961]/10">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                 <p className="text-sm text-zinc-400">
                   Placed: {new Date(orderSuccess.placedAt).toLocaleString()}
                 </p>
                 <p className="text-sm text-zinc-400">Total paid: ${total.toLocaleString()}</p>
               </div>
 
-              <div className="mt-8 flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col gap-3 mt-8 sm:flex-row">
                 <button
                   className="flex-1 bg-[#C9A961] text-black py-3 rounded-lg font-medium hover:bg-[#b89852] transition-all"
                   onClick={() => navigate('/')}
@@ -169,14 +235,14 @@ const Checkout = ({ cart = [] }) => {
         </p>
 
         {error && (
-          <div className="mb-6 border border-red-400/30 bg-red-500/10 text-red-200 px-4 py-3 rounded-lg">
+          <div className="px-4 py-3 mb-6 text-red-200 border rounded-lg border-red-400/30 bg-red-500/10">
             {error}
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
           <div className="bg-zinc-900/40 backdrop-blur-xl border border-[#c9a961]/15 p-6 md:p-8 rounded-xl">
-            <h2 className="text-xl font-light text-white mb-4">Shipping Details</h2>
+            <h2 className="mb-4 text-xl font-light text-white">Shipping Details</h2>
 
             <form onSubmit={onSubmit} className="space-y-4">
               <div>
@@ -223,7 +289,7 @@ const Checkout = ({ cart = [] }) => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="text-xs tracking-wider uppercase text-zinc-500">City</label>
                   <input
@@ -257,7 +323,7 @@ const Checkout = ({ cart = [] }) => {
 
               <div>
                 <label className="text-xs tracking-wider uppercase text-zinc-500">Payment Method</label>
-                <div className="mt-2 flex gap-3">
+                <div className="flex gap-3 mt-2">
                   <label className="flex items-center gap-2 text-sm text-zinc-300">
                     <input
                       type="radio"
@@ -281,14 +347,27 @@ const Checkout = ({ cart = [] }) => {
                 </div>
               </div>
 
+              <div className="hidden">
+                <PaystackButton key={paystackInstanceKey} {...paystackConfig} />
+              </div>
+
+
               <button
-                type="submit"
-                disabled={submitting}
+                type="button"
+                disabled={submitting || verifyingPayment}
+                onClick={() => {
+                  // Use the hidden PaystackButton to open the popup.
+                  // react-paystack v6 supports this via the onSuccess/onClose callbacks above.
+                  // Trigger by dispatching a click event to the PaystackButton container.
+                  const el = document.querySelector('.paystack-hidden-button')
+                  el?.click?.()
+                }}
                 className="w-full bg-[#C9A961] text-black py-4 rounded-lg font-medium hover:bg-[#b89852] transition-all uppercase tracking-wider text-sm disabled:opacity-60"
               >
                 <i className="mr-2 fa fa-lock" />
-                {submitting ? 'Placing order...' : `Place Order (${total.toLocaleString()})`}
+                {verifyingPayment || submitting ? 'Processing payment...' : `Place Order (${total.toLocaleString()})`}
               </button>
+
 
               <button
                 type="button"
@@ -301,22 +380,22 @@ const Checkout = ({ cart = [] }) => {
           </div>
 
           <div className="bg-zinc-900/40 backdrop-blur-xl border border-[#c9a961]/15 p-6 md:p-8 rounded-xl">
-            <h2 className="text-xl font-light text-white mb-4">Order Summary</h2>
+            <h2 className="mb-4 text-xl font-light text-white">Order Summary</h2>
 
             <div className="space-y-4">
               {cart.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-start gap-4 bg-black/20 border border-zinc-800/50 rounded-xl p-4"
+                  className="flex items-start gap-4 p-4 border bg-black/20 border-zinc-800/50 rounded-xl"
                 >
                   {item.imageUrl ? (
                     <img
                       src={item.imageUrl}
                       alt={item.name}
-                      className="w-16 h-16 object-cover rounded-lg bg-white"
+                      className="object-cover w-16 h-16 bg-white rounded-lg"
                     />
                   ) : (
-                    <div className="w-16 h-16 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400">
+                    <div className="flex items-center justify-center w-16 h-16 rounded-lg bg-zinc-800 text-zinc-400">
                       <i className="fa fa-box" />
                     </div>
                   )}
@@ -325,7 +404,7 @@ const Checkout = ({ cart = [] }) => {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-serif text-[#c9a961] font-light">{item.name}</p>
-                        <p className="text-xs tracking-wider uppercase text-zinc-500 mt-1">
+                        <p className="mt-1 text-xs tracking-wider uppercase text-zinc-500">
                           {item.collection}
                         </p>
                       </div>
@@ -333,7 +412,7 @@ const Checkout = ({ cart = [] }) => {
                         ${Number(item.price * item.qty).toLocaleString()}
                       </p>
                     </div>
-                    <p className="text-xs text-zinc-500 mt-2">Qty: {item.qty}</p>
+                    <p className="mt-2 text-xs text-zinc-500">Qty: {item.qty}</p>
                   </div>
                 </div>
               ))}
