@@ -13,6 +13,7 @@ import Footer from './components/Footer.jsx'
 import Register from './pages/Register.jsx'
 import Cart from './pages/Cart.jsx'
 import Checkout from './pages/Checkout.jsx'
+import OrderSuccess from './pages/OrderSuccess.jsx'
 import Admin from './pages/AdminDashboard.jsx'
 import AuthGuard from './auth/AuthGuard.jsx'
 import { getJson, postJson } from './services/apiClient'
@@ -478,6 +479,23 @@ export function App() {
             </AuthGuard>
           }
         />
+        <Route
+          path="/order-success"
+          element={
+            <AuthGuard requireAuth>
+              <OrderSuccess />
+            </AuthGuard>
+          }
+        />
+        <Route
+          path="/order/:orderId"
+          element={
+            <AuthGuard requireAuth>
+              <OrderSuccess />
+            </AuthGuard>
+          }
+        />
+
         <Route
           path="/admin"
           element={

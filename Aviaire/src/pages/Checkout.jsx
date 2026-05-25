@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { PaystackButton } from 'react-paystack'
 import { postJson } from '../services/apiClient'
 import { authStore } from '../auth/authStore'
 
@@ -15,23 +14,17 @@ const Checkout = ({ cart = [] }) => {
     city: '',
     country: '',
     postalCode: '',
-    paymentMethod: 'card',
   })
 
   const [submitting, setSubmitting] = useState(false)
-  const [orderSuccess, setOrderSuccess] = useState(null)
+  const [verifyingPayment, setVerifyingPayment] = useState(false)
   const [error, setError] = useState(null)
-  const [paystackInstanceKey, setPaystackInstanceKey] = useState(0)
-
 
   const total = useMemo(() => {
     return cart.reduce((sum, item) => sum + item.price * item.qty, 0)
   }, [cart])
 
   const itemsCount = useMemo(() => cart.reduce((sum, item) => sum + item.qty, 0), [cart])
-
-  // Demo checkout: no backend call required for the current fake order flow.
-
 
   const onChange = (e) => {
     const { name, value } = e.target
@@ -51,15 +44,6 @@ const Checkout = ({ cart = [] }) => {
     return null
   }
 
-  const [verifyingPayment, setVerifyingPayment] = useState(false)
-
-  const triggerPaystack = () => {
-    // react-paystack opens the Paystack popup when the PaystackButton is mounted.
-    // Re-mounting with a new key guarantees the popup opens on every click.
-    setPaystackInstanceKey((k) => k + 1)
-  }
-
-
   const getLoggedInEmail = () => {
     // Prefer logged-in email from JWT payload when available
     try {
@@ -67,9 +51,7 @@ const Checkout = ({ cart = [] }) => {
       if (token) {
         const parts = String(token).split('.')
         if (parts.length === 3) {
-          const payload = JSON.parse(
-            atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'))
-          )
+          const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
           if (payload?.email) return payload.email
         }
       }
@@ -79,61 +61,16 @@ const Checkout = ({ cart = [] }) => {
     return form.email
   }
 
-  const paystackConfig = useMemo(() => {
-    const amountKobo = Math.round(Number(total) * 100)
-    const email = getLoggedInEmail()
-
-    return {
-      reference: `AV-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`,
-      email,
-      amount: amountKobo,
-      publicKey: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY,
-      text: 'Paystack Button',
-      onSuccess: async (response) => {
-        try {
-          setVerifyingPayment(true)
-          setError(null)
-
-          // 1) Verify the Paystack payment
-          const verifyResp = await postJson('paystack/verify', {
-            reference: response.reference,
-            fullName: form.fullName,
-            email,
-            phone: form.phone,
-            address1: form.address1,
-            city: form.city,
-            country: form.country,
-            postalCode: form.postalCode,
-          })
-
-          const data = verifyResp?.data || {}
-
-
-
-          // NOTE: `cart` is stored in App state, so we can't directly mutate it here.
-          // Backend checkout clears the cart in the database.
-          // When the user navigates to `/cart`, App will refresh cart from backend.
-
-          setOrderSuccess({
-
-            id: data?.orderId,
-            placedAt: data?.placedAt,
-            total: data?.total,
-          })
-
-        } catch (err) {
-          setError(err?.message || 'Payment verification failed.')
-        } finally {
-          setVerifyingPayment(false)
-        }
-      },
-
-      onClose: () => {
-        setError('Payment was cancelled. Please try again.')
-      },
+  const clearClientCart = () => {
+    try {
+      localStorage.removeItem('cart')
+      localStorage.removeItem('cartItems')
+      sessionStorage.removeItem('cart')
+      sessionStorage.removeItem('cartItems')
+    } catch {
+      // ignore
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [total, form, paystackInstanceKey, triggerPaystack])
+  }
 
   const onSubmit = async (e) => {
     e.preventDefault()
@@ -150,70 +87,48 @@ const Checkout = ({ cart = [] }) => {
       return
     }
 
+    const emailForPaystack = getLoggedInEmail()
+    const reference = `AV-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`
+
     setSubmitting(true)
+
     try {
-      triggerPaystack()
-    } finally {
-      // Let Paystack callbacks control the actual loading state.
+      // 1) Initialize Paystack transaction
+      const initResp = await postJson('paystack/initialize', {
+        reference,
+        amountKobo: Math.round(Number(total) * 100),
+        currency: 'NGN',
+        email: emailForPaystack,
+        // Send shipping fields along so verify can create a complete order.
+        fullName: form.fullName,
+        phone: form.phone,
+        address1: form.address1,
+        city: form.city,
+        country: form.country,
+        postalCode: form.postalCode,
+        // Used as return/callback to the success page.
+        callbackUrl: `${window.location.origin}/order-success?reference=${encodeURIComponent(reference)}`,
+      })
+
+      const authorizationUrl = initResp?.data?.authorizationUrl
+
+
+      if (!authorizationUrl) {
+        throw new Error('Failed to initialize Paystack checkout. Please try again.')
+      }
+
+      // 2) Open Paystack checkout (redirect to authorization URL)
+      // This avoids mixing react-paystack mount timing issues and works reliably in both dev and prod.
+      window.location.assign(authorizationUrl)
+    } catch (err) {
+      setError(err?.message || 'Payment initialization failed.')
       setSubmitting(false)
     }
   }
 
-
-
-
-  if (orderSuccess) {
-    return (
-      <div className="min-h-screen bg-[#111111] text-white pt-24 pb-16 px-6 md:px-12">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl md:text-5xl font-serif font-light text-[#C9A961] text-center tracking-wide mb-4">
-            Order Confirmed
-          </h1>
-          <p className="max-w-2xl mx-auto mb-10 text-sm text-center text-zinc-400 md:text-base">
-            This is a demo checkout. No payment was processed.
-          </p>
-
-          <div className="bg-zinc-900/40 backdrop-blur-xl border border-[#c9a961]/15 p-6 md:p-8 rounded-xl">
-            <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-              <div>
-                <p className="mb-2 text-xs tracking-wider uppercase text-zinc-500">Order ID</p>
-                <p className="text-3xl font-light text-white">
-                  <span className="text-[#c9a961]">{orderSuccess.id}</span>
-                </p>
-              </div>
-              <div className="w-14 h-14 rounded-full bg-[#C9A961]/15 border border-[#C9A961]/25 flex items-center justify-center">
-                <i className="fa fa-check text-[#C9A961] text-2xl" aria-hidden="true" />
-              </div>
-            </div>
-
-            <div className="mt-6 pt-6 border-t border-[#c9a961]/10">
-              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                <p className="text-sm text-zinc-400">
-                  Placed: {new Date(orderSuccess.placedAt).toLocaleString()}
-                </p>
-                <p className="text-sm text-zinc-400">Total paid: ${total.toLocaleString()}</p>
-              </div>
-
-              <div className="flex flex-col gap-3 mt-8 sm:flex-row">
-                <button
-                  className="flex-1 bg-[#C9A961] text-black py-3 rounded-lg font-medium hover:bg-[#b89852] transition-all"
-                  onClick={() => navigate('/')}
-                >
-                  Continue Shopping
-                </button>
-                <button
-                  className="flex-1 bg-transparent border border-[#c9a961]/30 text-white py-3 rounded-lg font-medium hover:border-[#c9a961]/50 transition-all"
-                  onClick={() => navigate('/cart')}
-                >
-                  Review Cart
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  // If your Paystack flow returns to the app with reference, you'd typically verify here.
+  // This implementation assumes checkout redirect either completes server-side via verify callback on user return
+  // OR you handle return/redirect separately. For now, verify is only triggered from the success page.
 
   if (!cart || cart.length === 0) {
     return (
@@ -242,7 +157,7 @@ const Checkout = ({ cart = [] }) => {
           Checkout
         </h1>
         <p className="max-w-2xl mx-auto mb-10 text-sm text-center text-zinc-400 md:text-base">
-          Complete your details to place your (demo) order.
+          Complete your details to place your order.
         </p>
 
         {error && (
@@ -332,57 +247,14 @@ const Checkout = ({ cart = [] }) => {
                 />
               </div>
 
-              <div>
-                <label className="text-xs tracking-wider uppercase text-zinc-500">Payment Method</label>
-                <div className="flex gap-3 mt-2">
-                  <label className="flex items-center gap-2 text-sm text-zinc-300">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="card"
-                      checked={form.paymentMethod === 'card'}
-                      onChange={onChange}
-                    />
-                    Card
-                  </label>
-                  <label className="flex items-center gap-2 text-sm text-zinc-300">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="paypal"
-                      checked={form.paymentMethod === 'paypal'}
-                      onChange={onChange}
-                    />
-                    PayPal
-                  </label>
-                </div>
-              </div>
-
-              <div className="hidden">
-                <PaystackButton key={paystackInstanceKey} {...paystackConfig} />
-              </div>
-
-
               <button
-                type="button"
+                type="submit"
                 disabled={submitting || verifyingPayment}
-                onClick={() => {
-                  if (submitting || verifyingPayment) return
-
-                  const ok = window.confirm(
-                    `Confirm placing order?\n\nTotal: $${total.toLocaleString()}`
-                  )
-                  if (!ok) return
-
-                  // Trigger Paystack popup reliably.
-                  triggerPaystack()
-                }}
                 className="w-full bg-[#C9A961] text-black py-4 rounded-lg font-medium hover:bg-[#b89852] transition-all uppercase tracking-wider text-sm disabled:opacity-60"
               >
                 <i className="mr-2 fa fa-lock" />
-                {verifyingPayment || submitting ? 'Processing payment...' : `Place Order (${total.toLocaleString()})`}
+                {submitting || verifyingPayment ? 'Redirecting to Paystack...' : `Place Order (${total.toLocaleString()})`}
               </button>
-
 
               <button
                 type="button"
@@ -419,13 +291,9 @@ const Checkout = ({ cart = [] }) => {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-serif text-[#c9a961] font-light">{item.name}</p>
-                        <p className="mt-1 text-xs tracking-wider uppercase text-zinc-500">
-                          {item.collection}
-                        </p>
+                        <p className="mt-1 text-xs tracking-wider uppercase text-zinc-500">{item.collection}</p>
                       </div>
-                      <p className="text-sm text-white/90">
-                        ${Number(item.price * item.qty).toLocaleString()}
-                      </p>
+                      <p className="text-sm text-white/90">${Number(item.price * item.qty).toLocaleString()}</p>
                     </div>
                     <p className="mt-2 text-xs text-zinc-500">Qty: {item.qty}</p>
                   </div>
@@ -446,7 +314,7 @@ const Checkout = ({ cart = [] }) => {
               </div>
 
               <p className="mt-4 text-xs text-zinc-600">
-                Demo mode: This checkout does not process payment.
+                Paystack secure checkout.
               </p>
             </div>
           </div>
