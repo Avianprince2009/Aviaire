@@ -26,3 +26,50 @@
   background: #c9a961;
   border-radius: 10px;
 }
+
+/* ===== Aviaire Animations (Tailwind-friendly) ===== */
+
+/* Reveal-on-scroll foundation. Components can opt-in by using:
+   className="reveal" on elements to animate into view.
+*/
+.reveal {
+  opacity: 0;
+  transform: translateY(12px) scale(0.98);
+  transition: opacity 700ms ease, transform 700ms ease;
+  will-change: opacity, transform;
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+/* Optional shimmer skeleton helper (pages can opt-in with skeleton-shimmer). */
+@keyframes aviaire-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(255,255,255,0.16), rgba(255,255,255,0.06));
+  background-size: 200% 100%;
+  animation: aviaire-shimmer 1.2s ease-in-out infinite;
+}
+
+/* Reduced motion: disable transforms + most animations */
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .skeleton-shimmer {
+    animation: none;
+  }
+}
+

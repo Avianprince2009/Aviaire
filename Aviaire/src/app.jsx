@@ -2,6 +2,9 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import React, { useState, useEffect } from 'react'
 import './app.css'
 import Navbar from './components/Navbar'
+import AnimatedRoutes from './components/AnimatedRoutes'
+import './components/PageTransition.css'
+
 import Home from './pages/Home.jsx'
 import About from './pages/About.jsx'
 import Collections from './pages/Collections.jsx'
@@ -450,6 +453,7 @@ export function App() {
   return (
     <BrowserRouter>
       <Navbar
+
         cartCount={cart.reduce((sum, item) => sum + item.qty, 0)}
         isLoggedIn={!!authInfo}
         userEmail={authInfo?.email || null}
@@ -460,58 +464,61 @@ export function App() {
         }}
       />
 
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/collections" element={<Collections products={products} addToCart={addToCart} />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/register" element={<Register />} />
+      <AnimatedRoutes>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/collections" element={<Collections products={products} addToCart={addToCart} />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/register" element={<Register />} />
 
-        <Route
-          path="/cart"
-          element={
-            <AuthGuard requireAuth>
-              <Cart cart={cart} removeFromCart={removeFromCart} updateCartQty={updateCartQty} />
-            </AuthGuard>
-          }
-        />
-        <Route
-          path="/checkout"
-          element={
-            <AuthGuard requireAuth>
-              <Checkout cart={cart} />
-            </AuthGuard>
-          }
-        />
-        <Route
-          path="/order-success"
-          element={
-            <AuthGuard requireAuth>
-              <OrderSuccess />
-            </AuthGuard>
-          }
-        />
-        <Route
-          path="/order/:orderId"
-          element={
-            <AuthGuard requireAuth>
-              <OrderSuccess />
-            </AuthGuard>
-          }
-        />
+          <Route
+            path="/cart"
+            element={
+              <AuthGuard requireAuth>
+                <Cart cart={cart} removeFromCart={removeFromCart} updateCartQty={updateCartQty} />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/checkout"
+            element={
+              <AuthGuard requireAuth>
+                <Checkout cart={cart} />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/order-success"
+            element={
+              <AuthGuard requireAuth>
+                <OrderSuccess />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/order/:orderId"
+            element={
+              <AuthGuard requireAuth>
+                <OrderSuccess />
+              </AuthGuard>
+            }
+          />
 
-        <Route
-          path="/admin"
-          element={
-            <AuthGuard requireAdmin>
-              <Admin products={products} setProducts={setProducts} />
-            </AuthGuard>
-          }
-        />
-        <Route path='*' element={<NotFound />} />
-      </Routes>
+          <Route
+            path="/admin"
+            element={
+              <AuthGuard requireAdmin>
+                <Admin products={products} setProducts={setProducts} />
+              </AuthGuard>
+            }
+          />
+          <Route path='*' element={<NotFound />} />
+        </Routes>
+      </AnimatedRoutes>
+
       {cartModal.open && (
         <div className="fixed inset-0 z-9999 flex items-center justify-center">
           <div
