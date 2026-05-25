@@ -62,6 +62,8 @@ const Checkout = ({ cart = [] }) => {
   }
 
   const clearClientCart = () => {
+    // keep cart clearing ONLY on successful verification (done in OrderSuccess)
+
     try {
       localStorage.removeItem('cart')
       localStorage.removeItem('cartItems')
@@ -99,14 +101,12 @@ const Checkout = ({ cart = [] }) => {
         amountKobo: Math.round(Number(total) * 100),
         currency: 'NGN',
         email: emailForPaystack,
-        // Send shipping fields along so verify can create a complete order.
         fullName: form.fullName,
         phone: form.phone,
         address1: form.address1,
         city: form.city,
         country: form.country,
         postalCode: form.postalCode,
-        // Used as return/callback to the success page.
         callbackUrl: `${window.location.origin}/order-success?reference=${encodeURIComponent(reference)}`,
       })
 

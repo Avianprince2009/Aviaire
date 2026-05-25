@@ -117,8 +117,14 @@ export function App() {
   }, [])
 
   useEffect(() => {
-    localStorage.setItem('aviaire_products', JSON.stringify(products))
+    // Avoid blowing up localStorage quota. Only persist if possible.
+    try {
+      localStorage.setItem('aviaire_products', JSON.stringify(products))
+    } catch {
+      // ignore quota/storage errors
+    }
   }, [products])
+
 
   const loadCartFromBackend = async () => {
     const tokenKey = 'aviaire_auth_token'
