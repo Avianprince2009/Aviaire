@@ -53,16 +53,12 @@ const Checkout = ({ cart = [] }) => {
 
   const [verifyingPayment, setVerifyingPayment] = useState(false)
 
-  // Make sure Paystack popup reliably opens on every click.
-  // react-paystack opens the popup when its component is mounted.
   const triggerPaystack = () => {
+    // react-paystack opens the Paystack popup when the PaystackButton is mounted.
+    // Re-mounting with a new key guarantees the popup opens on every click.
     setPaystackInstanceKey((k) => k + 1)
-
-    // Fallback: if the popup button is rendered, click it.
-    // This prevents the “Place Order” button from appearing broken.
-    const el = document.querySelector('[data-paystack-button="true"]')
-    el?.click?.()
   }
+
 
   const getLoggedInEmail = () => {
     // Prefer logged-in email from JWT payload when available
@@ -98,6 +94,7 @@ const Checkout = ({ cart = [] }) => {
           setVerifyingPayment(true)
           setError(null)
 
+          // 1) Verify the Paystack payment
           const verifyResp = await postJson('paystack/verify', {
             reference: response.reference,
             fullName: form.fullName,
@@ -111,17 +108,26 @@ const Checkout = ({ cart = [] }) => {
 
           const data = verifyResp?.data || {}
 
+
+
+          // NOTE: `cart` is stored in App state, so we can't directly mutate it here.
+          // Backend checkout clears the cart in the database.
+          // When the user navigates to `/cart`, App will refresh cart from backend.
+
           setOrderSuccess({
+
             id: data?.orderId,
             placedAt: data?.placedAt,
             total: data?.total,
           })
+
         } catch (err) {
           setError(err?.message || 'Payment verification failed.')
         } finally {
           setVerifyingPayment(false)
         }
       },
+
       onClose: () => {
         setError('Payment was cancelled. Please try again.')
       },

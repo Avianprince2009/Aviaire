@@ -1,9 +1,11 @@
-# Aviaire - Performance Fix Task
+# Aviaire Task TODO
 
-- [x] Parallelize initial loads in `src/app.jsx` (products + cart via Promise.allSettled)
-- [ ] Reduce worst-case request timeout in `src/services/apiClient.js` (shorter than 15000ms)
-- [ ] Add lightweight timing logs in `src/services/apiClient.js`
-- [x] Ensure cart qty/actions remain responsive (optimistic UI + debounced backend refresh)
-- [ ] Run dev server and manually test cart flows
-- [ ] (Later) Inspect backend cart endpoints if still slow under real network
+- [x] Inspect checkout + cart flow for Paystack + cart clearing
+
+- [x] Update `Aviaire/src/pages/Checkout.jsx`:
+  - [x] Make Paystack popup open reliably on “Place Order” click
+  - [x] Clear frontend cart after payment success (call backend checkout endpoint / refresh cart)
+  - [x] Ensure UI navigates/re-renders with empty cart
+
+- [ ] Test locally: Paystack popup opens every time; cart clears after success
 
