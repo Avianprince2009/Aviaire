@@ -128,9 +128,7 @@ export function App() {
     }
     if (!token) return
 
-    const data = await getJson('cart', { headers: { Authorization: `Bearer ${token}` } }).catch((e) => {
-      throw e
-    })
+    const data = await getJson('cart', { headers: { Authorization: `Bearer ${token}` } })
 
     const items = data?.data?.items || data?.items || []
     const normalized = items.map((x) => {
@@ -159,6 +157,31 @@ export function App() {
 
     setCart(normalized)
   }
+
+  // Debounce backend cart refresh to keep UI snappy on rapid clicks.
+  const cartRefreshTimerRef = React.useRef(null)
+  const scheduleCartRefresh = (delayMs = 500) => {
+    if (cartRefreshTimerRef.current) {
+      window.clearTimeout(cartRefreshTimerRef.current)
+    }
+    cartRefreshTimerRef.current = window.setTimeout(() => {
+      loadCartFromBackend().catch(() => {})
+      cartRefreshTimerRef.current = null
+    }, delayMs)
+  }
+
+  const upsertLocalCartItem = (product) => {
+    setCart((prev) => {
+      const existing = prev.find((item) => item.id === product.id)
+      if (existing) {
+        return prev.map((item) => (item.id === product.id ? { ...item, qty: item.qty + 1 } : item))
+      }
+      return [...prev, { ...product, qty: 1 }]
+    })
+  }
+
+  const [cartSyncInFlight, setCartSyncInFlight] = useState(false)
+
 
   const getAuthInfoFromToken = () => {
     const tokenKey = 'aviaire_auth_token'
@@ -297,24 +320,24 @@ export function App() {
       quantity: 1,
     }
 
+    // Optimistic UI: update cart instantly; sync with backend in background.
+    upsertLocalCartItem({
+      ...product,
+      // Ensure local item id matches backend id so subsequent updates/removals line up.
+      id: backendProductId,
+      price: product?.price ?? product?.unitPrice,
+    })
+    showAddedToCartModal('Added to cart')
+
     try {
       await postJson('cart/add', body, { headers: { Authorization: `Bearer ${token}` } })
-      await loadCartFromBackend()
-      showAddedToCartModal('Added to cart')
+      scheduleCartRefresh(500)
     } catch (err) {
-      // Keep UI responsive even if backend fails (CORS/auth/network/etc.)
-      setCart((prev) => {
-        const existing = prev.find((item) => item.id === product.id)
-        if (existing) {
-          return prev.map((item) =>
-            item.id === product.id ? { ...item, qty: item.qty + 1 } : item
-          )
-        }
-        return [...prev, { ...product, qty: 1 }]
-      })
+      // Re-sync to recover if backend rejects the optimistic change.
       console.error('Failed to add to cart (backend):', err)
-      showAddedToCartModal('Added to cart')
+      scheduleCartRefresh(500)
     }
+
   }
 
   const removeFromCart = async (id) => {
