@@ -489,7 +489,7 @@ export function App() {
         <Route path='*' element={<NotFound />} />
       </Routes>
       {cartModal.open && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+        <div className="fixed inset-0 z-9999 flex items-center justify-center">
           <div
             className="absolute inset-0 bg-black/60"
             onClick={() => setCartModal({ open: false, message: '' })}
