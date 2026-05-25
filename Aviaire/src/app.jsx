@@ -182,6 +182,38 @@ export function App() {
 
   const [cartSyncInFlight, setCartSyncInFlight] = useState(false)
 
+  // Prevent race conditions + avoid spamming backend with full cart refetches.
+  const cartMutationSeqRef = React.useRef(0)
+  const lastCartRequestSeqRef = React.useRef(0)
+  const syncScheduledRef = React.useRef(false)
+
+  const scheduleCartSyncOnce = (delayMs = 350) => {
+    // If a sync is already scheduled, don't schedule another.
+    if (syncScheduledRef.current) return
+    syncScheduledRef.current = true
+
+    if (cartRefreshTimerRef.current) {
+      window.clearTimeout(cartRefreshTimerRef.current)
+    }
+
+    cartRefreshTimerRef.current = window.setTimeout(() => {
+      syncScheduledRef.current = false
+
+      // Only the latest mutation should trigger a refresh.
+      const seq = cartMutationSeqRef.current
+      lastCartRequestSeqRef.current = seq
+
+      setCartSyncInFlight(true)
+      loadCartFromBackend()
+        .catch(() => {})
+        .finally(() => {
+          // Avoid clearing the in-flight flag if a newer mutation has happened.
+          if (lastCartRequestSeqRef.current === seq) {
+            setCartSyncInFlight(false)
+          }
+        })
+    }, delayMs)
+  }
 
   const getAuthInfoFromToken = () => {
     const tokenKey = 'aviaire_auth_token'
@@ -348,13 +380,24 @@ export function App() {
       token = null
     }
 
-    if (!token) {
-      setCart((prev) => prev.filter((item) => item.id !== id))
-      return
-    }
+    // Optimistic UI first.
+    setCart((prev) => prev.filter((item) => item.id !== id))
 
-    await postJson('cart/remove', { productId: id }, { headers: { Authorization: `Bearer ${token}` } })
-    await loadCartFromBackend()
+    if (!token) return
+
+    // Coalesce backend cart syncs.
+    cartMutationSeqRef.current += 1
+    const seqAtStart = cartMutationSeqRef.current
+
+    // Fire-and-forget; UI is already updated.
+    postJson('cart/remove', { productId: id }, { headers: { Authorization: `Bearer ${token}` } })
+      .catch(() => {
+        // If backend fails, re-sync from backend to recover.
+        loadCartFromBackend().catch(() => {})
+      })
+      .finally(() => {
+        scheduleCartSyncOnce(350)
+      })
   }
 
   const updateCartQty = async (id, qty) => {
@@ -370,14 +413,32 @@ export function App() {
       token = null
     }
 
-    if (!token) {
-      setCart((prev) => prev.map((item) => (item.id === id ? { ...item, qty } : item)))
-      return
-    }
+    // Optimistic UI first.
+    setCart((prev) => prev.map((item) => (item.id === id ? { ...item, qty } : item)))
 
-    await postJson('cart/quantity', { productId: id, quantity: qty }, { headers: { Authorization: `Bearer ${token}` } })
-    await loadCartFromBackend()
+    if (!token) return
+
+    // Coalesce backend cart syncs.
+    cartMutationSeqRef.current += 1
+    const seqAtStart = cartMutationSeqRef.current
+
+    postJson(
+      'cart/quantity',
+      { productId: id, quantity: qty },
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+      .catch(() => {
+        if (lastCartRequestSeqRef.current !== seqAtStart) {
+          loadCartFromBackend().catch(() => {})
+        } else {
+          scheduleCartSyncOnce(0)
+        }
+      })
+      .finally(() => {
+        scheduleCartSyncOnce(350)
+      })
   }
+
 
   return (
     <BrowserRouter>
