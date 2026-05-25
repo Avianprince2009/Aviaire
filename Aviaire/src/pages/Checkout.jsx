@@ -96,7 +96,8 @@ const Checkout = ({ cart = [] }) => {
 
     try {
       // 1) Initialize Paystack transaction
-      const initResp = await postJson('paystack/initialize', {
+      // Use a full API path so we don't depend on current host/path.
+      const initResp = await postJson('/paystack/initialize', {
         reference,
         amountKobo: Math.round(Number(total) * 100),
         currency: 'NGN',
