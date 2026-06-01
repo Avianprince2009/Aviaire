@@ -17,6 +17,7 @@ import Register from './pages/Register.jsx'
 import Cart from './pages/Cart.jsx'
 import Checkout from './pages/Checkout.jsx'
 import OrderSuccess from './pages/OrderSuccess.jsx'
+import PaymentSuccess from './pages/PaymentSuccess.jsx'
 import Admin from './pages/AdminDashboard.jsx'
 import AuthGuard from './auth/AuthGuard.jsx'
 import { getJson, postJson } from './services/apiClient'
@@ -494,7 +495,15 @@ export function App() {
             path="/order-success"
             element={
               <AuthGuard requireAuth>
-                <OrderSuccess />
+                <PaymentSuccess />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/payment-success"
+            element={
+              <AuthGuard requireAuth>
+                <PaymentSuccess />
               </AuthGuard>
             }
           />

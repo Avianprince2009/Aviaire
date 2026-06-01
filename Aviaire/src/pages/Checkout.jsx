@@ -74,6 +74,25 @@ const Checkout = ({ cart = [] }) => {
     }
   }
 
+  const saveShippingInfo = () => {
+    try {
+      localStorage.setItem(
+        'aviaire_shipping_info',
+        JSON.stringify({
+          fullName: form.fullName,
+          email: form.email,
+          phone: form.phone,
+          address1: form.address1,
+          city: form.city,
+          country: form.country,
+          postalCode: form.postalCode,
+        })
+      )
+    } catch {
+      // ignore storage failures
+    }
+  }
+
   const onSubmit = async (e) => {
     e.preventDefault()
     setError(null)
@@ -93,37 +112,31 @@ const Checkout = ({ cart = [] }) => {
     const reference = `AV-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`
 
     setSubmitting(true)
+    saveShippingInfo()
 
     try {
-      // 1) Initialize Paystack transaction
-      // Use a full API path so we don't depend on current host/path.
       console.log('[Checkout] Initializing Paystack payment...')
-      console.log('[Checkout] Calling POST /paystack/initialize')
-      console.log('[Checkout] Total amount:', total, 'NGN')
-      console.log('[Checkout] User email:', emailForPaystack)
       const initResp = await postJson('/paystack/initialize', {
         reference,
         amountKobo: Math.round(Number(total) * 100),
         currency: 'NGN',
         email: emailForPaystack,
-        fullName: form.fullName,
-        phone: form.phone,
-        address1: form.address1,
-        city: form.city,
-        country: form.country,
-        postalCode: form.postalCode,
-        callbackUrl: `${window.location.origin}/order-success?reference=${encodeURIComponent(reference)}`,
+        shippingInfo: {
+          fullName: form.fullName,
+          email: form.email,
+          phone: form.phone,
+          address1: form.address1,
+          city: form.city,
+          country: form.country,
+          postalCode: form.postalCode,
+        },
       })
 
       const authorizationUrl = initResp?.data?.authorizationUrl
-
-
       if (!authorizationUrl) {
         throw new Error('Failed to initialize Paystack checkout. Please try again.')
       }
 
-      // 2) Open Paystack checkout (redirect to authorization URL)
-      // This avoids mixing react-paystack mount timing issues and works reliably in both dev and prod.
       window.location.assign(authorizationUrl)
     } catch (err) {
       setError(err?.message || 'Payment initialization failed.')
