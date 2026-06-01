@@ -260,6 +260,7 @@ export function App() {
       } catch {
         // ignore
       }
+      loadCartFromBackend().catch(() => {})
     }
 
     window.addEventListener('authChange', authChangeHandler)
