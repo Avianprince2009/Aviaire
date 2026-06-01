@@ -132,7 +132,7 @@ const Checkout = ({ cart = [] }) => {
         },
       })
 
-      const authorizationUrl = initResp?.data?.authorizationUrl
+      const authorizationUrl = initResp?.authorizationUrl || initResp?.data?.authorizationUrl
       if (!authorizationUrl) {
         throw new Error('Failed to initialize Paystack checkout. Please try again.')
       }
