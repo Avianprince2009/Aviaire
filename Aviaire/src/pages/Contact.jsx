@@ -28,7 +28,8 @@ const Contact = () => {
 
       // Backend route expected to accept: { name, email, subject, message }
       // Note: apiClient will prefix with VITE_API_BASE_URL (ends with /api/v1)
-      await postJson('/contact', { name, email, subject, message })
+      await postJson('contact', { name, email, subject, message })
+
 
       setStatus({ type: 'success', message: 'Message sent. Our concierge will get back to you shortly.' })
       setForm({ name: '', email: '', subject: '', message: '' })
