@@ -81,14 +81,7 @@ const OrderSuccess = () => {
         }
 
         window.dispatchEvent(new Event('aviaireCartCleared'))
-
-        // If caller passed orderId in URL params, prefer it, else use returned orderId
-        const finalOrderId = data?.orderId || orderIdParam
-
-        // Redirect to a cleaner confirmation route
-        if (finalOrderId && finalOrderId !== orderIdParam) {
-          navigate(`/order/${finalOrderId}`, { replace: true })
-        }
+        navigate('/cart', { replace: true })
       } catch (err) {
         setError(err?.message || 'Payment could not be verified.')
       } finally {

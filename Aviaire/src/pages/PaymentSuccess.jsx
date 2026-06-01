@@ -47,11 +47,14 @@ const PaymentSuccess = () => {
           localStorage.removeItem('cart')
           localStorage.removeItem('cartItems')
           localStorage.removeItem('aviaire_shipping_info')
+          sessionStorage.removeItem('cart')
+          sessionStorage.removeItem('cartItems')
         } catch {
           // ignore
         }
 
         window.dispatchEvent(new Event('aviaireCartCleared'))
+        navigate('/cart', { replace: true })
       } catch (err) {
         setError(err?.message || 'Payment verification failed')
         setLoading(false)
