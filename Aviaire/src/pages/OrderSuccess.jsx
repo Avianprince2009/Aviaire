@@ -63,8 +63,9 @@ const OrderSuccess = () => {
           ...shipping,
         })
 
-        const data = verifyResp?.data || {}
-        setOrder(data?.data || {})
+        console.log('[OrderSuccess] Paystack verify response:', verifyResp)
+        const data = verifyResp?.data || verifyResp || {}
+        setOrder(data)
 
         // Clear cart only after successful order save.
         try {
@@ -77,7 +78,7 @@ const OrderSuccess = () => {
         }
 
         // If caller passed orderId in URL params, prefer it, else use returned orderId
-        const finalOrderId = data?.data?.orderId || orderIdParam
+        const finalOrderId = data?.orderId || orderIdParam
 
         // Redirect to a cleaner confirmation route
         if (finalOrderId && finalOrderId !== orderIdParam) {

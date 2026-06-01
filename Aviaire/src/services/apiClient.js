@@ -82,6 +82,8 @@ export async function request(path, opts = {}) {
   } = opts
 
   const url = /^https?:\/\//i.test(path) ? path : apiUrl(path)
+  
+  console.log('[api] Constructing request:', { method, pathArg: path, finalUrl: url })
 
   const requestHeaders = {
     Accept: 'application/json',
@@ -90,7 +92,12 @@ export async function request(path, opts = {}) {
 
   try {
     const token = authStore.getToken()
-    if (token) requestHeaders.Authorization = `Bearer ${token}`
+    if (token) {
+      requestHeaders.Authorization = `Bearer ${token}`
+      console.log('[api] Token found, adding Authorization header')
+    } else {
+      console.warn('[api] No token found for request to', path)
+    }
   } catch {
     // ignore storage errors
   }
@@ -134,6 +141,7 @@ export async function request(path, opts = {}) {
     const parsed = await safeParseTextOrJson(res)
 
     if (!res.ok) {
+      console.error('[api] Request failed:', { method, url, status: res.status, response: parsed })
       const message = parsed?.message || parsed || `HTTP ${res.status}`
       throw createApiError(message, { status: res.status, response: parsed })
     }

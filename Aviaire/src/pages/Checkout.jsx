@@ -97,6 +97,10 @@ const Checkout = ({ cart = [] }) => {
     try {
       // 1) Initialize Paystack transaction
       // Use a full API path so we don't depend on current host/path.
+      console.log('[Checkout] Initializing Paystack payment...')
+      console.log('[Checkout] Calling POST /paystack/initialize')
+      console.log('[Checkout] Total amount:', total, 'NGN')
+      console.log('[Checkout] User email:', emailForPaystack)
       const initResp = await postJson('/paystack/initialize', {
         reference,
         amountKobo: Math.round(Number(total) * 100),
