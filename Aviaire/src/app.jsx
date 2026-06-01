@@ -255,6 +255,8 @@ export function App() {
         localStorage.removeItem('cart')
         localStorage.removeItem('cartItems')
         localStorage.removeItem('aviaire_shipping_info')
+        sessionStorage.removeItem('cart')
+        sessionStorage.removeItem('cartItems')
       } catch {
         // ignore
       }

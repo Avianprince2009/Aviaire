@@ -46,6 +46,8 @@ const OrderSuccess = () => {
           throw new Error('Missing Paystack reference. Please try again.')
         }
 
+        console.log('[OrderSuccess] verifying payment reference:', reference)
+
         // Shipping details must be provided to backend verify.
         // We attempt to read them from query params first, otherwise fail.
         const shipping = {
@@ -73,9 +75,12 @@ const OrderSuccess = () => {
           localStorage.removeItem('cartItems')
           sessionStorage.removeItem('cart')
           sessionStorage.removeItem('cartItems')
+          localStorage.removeItem('aviaire_shipping_info')
         } catch {
           // ignore
         }
+
+        window.dispatchEvent(new Event('aviaireCartCleared'))
 
         // If caller passed orderId in URL params, prefer it, else use returned orderId
         const finalOrderId = data?.orderId || orderIdParam
