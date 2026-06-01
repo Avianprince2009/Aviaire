@@ -249,8 +249,23 @@ export function App() {
       setAuthInfo(getAuthInfoFromToken())
     }
 
+    const clearCartHandler = () => {
+      setCart([])
+      try {
+        localStorage.removeItem('cart')
+        localStorage.removeItem('cartItems')
+        localStorage.removeItem('aviaire_shipping_info')
+      } catch {
+        // ignore
+      }
+    }
+
     window.addEventListener('authChange', authChangeHandler)
-    return () => window.removeEventListener('authChange', authChangeHandler)
+    window.addEventListener('aviaireCartCleared', clearCartHandler)
+    return () => {
+      window.removeEventListener('authChange', authChangeHandler)
+      window.removeEventListener('aviaireCartCleared', clearCartHandler)
+    }
   }, [])
 
   useEffect(() => {

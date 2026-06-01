@@ -50,6 +50,8 @@ const PaymentSuccess = () => {
         } catch {
           // ignore
         }
+
+        window.dispatchEvent(new Event('aviaireCartCleared'))
       } catch (err) {
         setError(err?.message || 'Payment verification failed')
         setLoading(false)
