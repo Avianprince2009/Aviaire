@@ -19,7 +19,7 @@ const Home = () => {
             className="text-7xl md:text-8xl lg:text-9xl font-semibold text-yellow-300 drop-shadow-[0_0_30px_rgba(255,215,0,0.8)] transition duration-700 ease-out"
             style={{ fontFamily: 'Cinzel, serif' }}
           >
-            L'ALLURE
+            L'LALLURE
           </h1>
           <p
             className="max-w-3xl text-xl leading-relaxed tracking-wide transition duration-700 ease-out md:text-3xl text-yellow-100/90 hover:text-yellow-200"
