@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { getJson, postJson, request, getErrorMessage } from '../services/apiClient'
 
 const STATUS_OPTIONS = ['pending', 'processing', 'shipped', 'delivered', 'cancelled']
@@ -57,6 +57,7 @@ const AdminOrders = () => {
 
   const [selectedOrder, setSelectedOrder] = useState(null)
   const [statusUpdateLoading, setStatusUpdateLoading] = useState(false)
+  const fetchRequestIdRef = useRef(0)
 
   const stats = useMemo(() => {
     const totalOrders = totalCount || 0
@@ -82,7 +83,9 @@ const AdminOrders = () => {
   }, [orders, totalCount])
 
   const fetchOrders = async () => {
+    const requestId = ++fetchRequestIdRef.current
     setLoading(true)
+
     try {
       const qs = new URLSearchParams()
       if (search.trim()) qs.set('q', search.trim())
@@ -91,15 +94,21 @@ const AdminOrders = () => {
       qs.set('limit', String(limit))
 
       const data = await getJson(`orders?${qs.toString()}`)
+      // Ignore stale slow responses
+      if (requestId !== fetchRequestIdRef.current) return
+
       const payload = data?.data || {}
       setOrders(payload.orders || [])
       setTotalPages(payload.totalPages || 1)
       setTotalCount(payload.totalCount || 0)
     } catch (err) {
+      // Ignore stale slow responses
+      if (requestId !== fetchRequestIdRef.current) return
+
       console.error(err)
       showToast(getErrorMessage(err, 'Failed to load orders.'), 'error')
     } finally {
-      setLoading(false)
+      if (requestId === fetchRequestIdRef.current) setLoading(false)
     }
   }
 
@@ -111,7 +120,7 @@ const AdminOrders = () => {
   useEffect(() => {
     const t = window.setTimeout(() => {
       setPage(1)
-      fetchOrders()
+      // fetch will be triggered by the [page, limit, status] effect
     }, 400)
     return () => window.clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
