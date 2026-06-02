@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "axios": "^1.16.1",
-    "react-paystack": "^6.0.0"
+    "react-paystack": "^6.0.0",
+    "tsc": "^2.0.4"
   }
 }

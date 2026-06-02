@@ -2,8 +2,11 @@ import React, { useState } from 'react'
 import { postJson, request, getErrorMessage } from '../services/apiClient'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
+import AdminOrders from './AdminOrders.jsx'
 
 const AdminDashboard = ({ products, setProducts }) => {
+  const [activeTab, setActiveTab] = useState('products')
+
   const [imagePreview, setImagePreview] = useState('')
   const [toast, setToast] = useState({ visible: false, type: 'success', message: '' })
   const [editingId, setEditingId] = useState(null)
@@ -18,7 +21,6 @@ const AdminDashboard = ({ products, setProducts }) => {
     { key: 'omega', label: 'Omega' },
     { key: 'cartier', label: 'Cartier' },
   ]
-
 
   const showToast = (message, type = 'success') => {
     setToast({ visible: true, message, type })
@@ -41,15 +43,11 @@ const AdminDashboard = ({ products, setProducts }) => {
         .typeError('Price must be a number')
         .positive('Price must be positive')
         .required('Price is required'),
-      imageUrl: Yup.string().test(
-        'image-required',
-        'Image URL or file required',
-        function (value) {
-          const { imageFile } = this.parent
-          if (imageFile) return true
-          return /^https?:\/\/.+/.test(value || '')
-        }
-      ),
+      imageUrl: Yup.string().test('image-required', 'Image URL or file required', function (value) {
+        const { imageFile } = this.parent
+        if (imageFile) return true
+        return /^https?:\/\/.+/.test(value || '')
+      }),
       description: Yup.string().max(300, 'Max 300 characters'),
     }),
     onSubmit: async (values, { resetForm, setSubmitting }) => {
@@ -160,13 +158,10 @@ const AdminDashboard = ({ products, setProducts }) => {
 
   return (
     <div className='bg-[#0a0a0a] text-white min-h-screen font-sans mt-16'>
-
       {toast.visible && (
         <div
           className={`fixed top-6 right-6 z-50 px-6 py-3 rounded shadow-lg animate-in fade-in slide-in-from-top-2 ${
-            toast.type === 'success'
-              ? 'bg-[#c9a961] text-black'
-              : 'bg-red-500 text-white'
+            toast.type === 'success' ? 'bg-[#c9a961] text-black' : 'bg-red-500 text-white'
           }`}
         >
           <i className={`mr-2 fa ${toast.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}`} />
@@ -177,9 +172,8 @@ const AdminDashboard = ({ products, setProducts }) => {
       <div className='px-4 sm:px-6 lg:px-8 py-6 mx-auto max-w-8xl'>
         <div className='mb-10 sm:mb-16 border-b border-[#c9a961]/10 pb-6 sm:pb-8'>
           <div className='flex items-center gap-3'>
-
             <div className='w-12 h-12 rounded-full bg-linear-to-br from-[#c9a961] to-[#8b7544] flex items-center justify-center'>
-              <i className="text-xl text-black fa fa-crown"></i>
+              <i className='text-xl text-black fa fa-crown' />
             </div>
             <div>
               <h1 className='text-4xl font-serif font-light text-[#c9a961] tracking-wide'>Dashboard</h1>
@@ -188,309 +182,330 @@ const AdminDashboard = ({ products, setProducts }) => {
           </div>
         </div>
 
-        <div className='grid grid-cols-1 gap-10 lg:grid-cols-5'>
-          <div className='lg:col-span-2'>
-            <div className='bg-zinc-900/40 backdrop-blur-xl border border-[#c9a961]/15 p-4 sm:p-6 lg:p-8 rounded-xl shadow-2xl shadow-black/50 h-fit lg:sticky lg:top-8'>
-              <div className='flex items-center gap-3 mb-6 sm:mb-8'>
-                <div className='w-10 h-10 rounded-lg bg-[#c9a961]/10 flex items-center justify-center'>
-
-                  <i className={`text-[#c9a961] fa ${editingId ? 'fa-pen' : 'fa-plus'}`}></i>
-                </div>
-                <h2 className='font-serif text-2xl font-light'>{editingId ? 'Edit Entry' : 'Create Entry'}</h2>
-              </div>
-
-              <form onSubmit={formik.handleSubmit} className='space-y-6'>
-                {currentImage && (
-                  <div className='p-4 border rounded-lg bg-zinc-800/50 border-zinc-700/50'>
-                    <p className='mb-3 text-xs tracking-wider uppercase text-zinc-500'>Preview</p>
-                    <img
-                      src={currentImage}
-                      alt="Preview"
-                      className='object-contain w-full h-48 bg-white rounded'
-                      onError={(e) => e.target.style.display = 'none'}
-                    />
-                  </div>
-                )}
-
-                <div>
-                  <label className='block mb-3 text-xs tracking-widest uppercase text-zinc-400'>
-                    <i className="fa fa-clock text-[#c9a961] mr-2"></i>Timepiece Name
-                  </label>
-                  <input
-                    name='name'
-                    placeholder='Patek Philippe Nautilus'
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.name}
-                    className='w-full bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-4 py-3 text-sm focus:border-[#c9a961] focus:bg-zinc-800 outline-none transition-all duration-300'
-                  />
-                  {formik.touched.name && formik.errors.name && (
-                    <div className='flex items-center mt-2 text-xs text-red-400'>
-                      <i className="mr-1.5 fa fa-exclamation-circle"></i>{formik.errors.name}
-                    </div>
-                  )}
-                </div>
-
-                <div className='grid grid-cols-2 gap-4'>
-                  <div>
-                    <label className='block mb-3 text-xs tracking-widest uppercase text-zinc-400'>
-                      <i className="fa fa-layer-group text-[#c9a961] mr-2"></i>Collection
-                    </label>
-                    <select
-                      name='collection'
-                      onChange={formik.handleChange}
-                      value={formik.values.collection}
-                      className='w-full bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-4 py-3 text-sm focus:border-[#c9a961] outline-none transition-all'
-                    >
-                      <option value='rolex'>Rolex</option>
-                      <option value='patek-philippe'>Patek Philippe</option>
-                      <option value='audemars-piguet'>Audemars Piguet</option>
-                      <option value="omega">Omega</option>
-                      <option value="cartier">Cartier</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className='block mb-3 text-xs tracking-widest uppercase text-zinc-400'>
-                      <i className="fa fa-dollar-sign text-[#c9a961] mr-2"></i>Retail Price
-                    </label>
-                    <input
-                      name='price'
-                      type='number'
-                      placeholder='12400'
-                      onChange={formik.handleChange}
-                      onBlur={formik.handleBlur}
-                      value={formik.values.price}
-                      className='w-full bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-4 py-3 text-sm focus:border-[#c9a961] outline-none transition-all'
-                    />
-                    {formik.touched.price && formik.errors.price && (
-                      <div className='flex items-center mt-2 text-xs text-red-400'>
-                        <i className="mr-1.5 fa fa-exclamation-circle"></i>{formik.errors.price}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <label className='block mb-3 text-xs tracking-widest uppercase text-zinc-400'>
-                    <i className="fa fa-image text-[#c9a961] mr-2"></i>Image Asset
-                  </label>
-                  <div className='space-y-3'>
-                    <input
-                      name='imageUrl'
-                      placeholder='https://example.com/watch.jpg'
-                      onChange={handleUrlChange}
-                      onBlur={formik.handleBlur}
-                      value={formik.values.imageUrl}
-                      className='w-full bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-4 py-3 text-sm focus:border-[#c9a961] outline-none transition-all'
-                    />
-                    <div className='flex items-center gap-3'>
-                      <div className='flex-1 h-px bg-zinc-700/50'></div>
-                      <span className='text-xs text-zinc-500'>OR</span>
-                      <div className='flex-1 h-px bg-zinc-700/50'></div>
-                    </div>
-                    <label className='w-full bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-4 py-3 text-sm hover:border-[#c9a961] cursor-pointer transition-all flex items-center justify-center gap-2'>
-                      <i className="fa fa-upload text-[#c9a961]"></i>
-                      <span className='text-zinc-400'>Choose File</span>
-                      <input
-                        type='file'
-                        accept='image/*'
-                        onChange={handleFileChange}
-                        className='hidden'
-                      />
-                    </label>
-                    {formik.values.imageFile && (
-                      <p className='text-xs text-[#c9a961]'>
-                        <i className="mr-1 fa fa-check"></i>{formik.values.imageFile.name}
-                      </p>
-                    )}
-                  </div>
-                  {formik.touched.imageUrl && formik.errors.imageUrl && (
-                    <div className='flex items-center mt-2 text-xs text-red-400'>
-                      <i className="mr-1.5 fa fa-exclamation-circle"></i>{formik.errors.imageUrl}
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className='block mb-3 text-xs tracking-widest uppercase text-zinc-400'>
-                    <i className="fa fa-align-left text-[#c9a961] mr-2"></i>Description
-                  </label>
-                  <textarea
-                    name='description'
-                    placeholder='Brief description...'
-                    rows='3'
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    value={formik.values.description}
-                    className='w-full bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-4 py-3 text-sm focus:border-[#c9a961] outline-none transition-all resize-none'
-                  />
-                </div>
-
-                {editingId && (
-                  <button
-                    type='button'
-                    onClick={handleCancelEdit}
-                    className='w-full border border-zinc-600 text-zinc-300 py-3 rounded-lg font-medium hover:bg-zinc-800 transition-all duration-300 uppercase tracking-wider text-sm mb-3'
-                  >
-                    <i className="mr-2 fa fa-times"></i>Cancel Edit
-                  </button>
-                )}
-                <button
-                  type='submit'
-                  disabled={formik.isSubmitting || loading}
-                  className='w-full bg-linear-to-r from-[#c9a961] to-[#b89852] text-black py-3.5 rounded-lg font-medium hover:shadow-lg hover:shadow-[#c9a961]/20 hover:scale-[1.02] mt-8 transition-all duration-300 uppercase tracking-wider text-sm disabled:opacity-60 disabled:cursor-not-allowed'
-                >
-                  <i className={`mr-2 fa ${editingId ? 'fa-save' : 'fa-plus'}`}></i>
-                  {loading || formik.isSubmitting
-                    ? editingId
-                      ? 'Updating...' : 'Saving...'
-                    : editingId
-                    ? 'Update Timepiece'
-                    : 'Register Timepiece'}
-                </button>
-              </form>
-            </div>
-          </div>
-
-          <div className='lg:col-span-3'>
-            <div className='bg-zinc-900/40 backdrop-blur-xl border border-[#c9a961]/15 p-8 rounded-xl shadow-2xl shadow-black/50'>
-              <div className='flex items-center gap-3 mb-8 pb-6 border-b border-[#c9a961]/10'>
-                <div className='w-10 h-10 rounded-lg bg-[#c9a961]/10 flex items-center justify-center'>
-                  <i className="fa fa-gem text-[#c9a961]"></i>
-                </div>
-                <h2 className='font-serif text-2xl font-light'>Collection</h2>
-                <div className='flex items-center gap-2 ml-auto'>
-                  <span className='bg-[#c9a961]/10 text-[#c9a961] text-xs px-4 py-2 rounded-full font-medium tracking-wider'>
-                    {products.length} {products.length === 1 ? 'PIECE' : 'PIECES'}
-                  </span>
-                </div>
-              </div>
-
-              {/* Collection filter (matches Collections page UI) */}
-              <div className='flex flex-wrap justify-center gap-3 mb-6'>
-                {COLLECTIONS.map((col) => (
-                  <button
-                    key={col.key}
-                    type='button'
-                    onClick={() => setActiveCollection(col.key)}
-                    className={`px-5 py-2 rounded-full text-xs tracking-widest uppercase transition-all duration-300 border ${
-                      activeCollection === col.key
-                        ? 'bg-[#C9A961] text-black border-[#C9A961]'
-                        : 'bg-transparent text-zinc-400 border-zinc-700 hover:border-[#C9A961] hover:text-[#C9A961]'
-                    }`}
-                  >
-                    {col.label}
-                  </button>
-                ))}
-              </div>
-
-              {(() => {
-                const filteredProducts =
-                  activeCollection === 'all'
-                    ? products
-                    : products.filter((p) => p.collection === activeCollection)
-
-                if (filteredProducts.length === 0) {
-                  return (
-                    <div className='py-16 text-center'>
-                      <div className='w-20 h-20 mx-auto rounded-full bg-[#c9a961]/5 flex items-center justify-center mb-6'>
-                        <i className="fa fa-gem text-[#c9a961]/30 text-3xl"></i>
-                      </div>
-                      <p className='font-serif text-lg text-zinc-300'>No Entries</p>
-                      <p className='mt-2 text-sm text-zinc-600'>No timepieces found for this collection</p>
-                    </div>
-                  )
-                }
-
-                return (
-                  <div className='pr-2 space-y-4 overflow-y-auto max-h-[60vh] lg:max-h-[70vh] custom-scroll'>
-
-                    {filteredProducts.map((product) => (
-                      <div
-                        key={product._id || product.id}
-                        className='group flex gap-5 bg-zinc-800/30 p-5 rounded-xl border border-zinc-700/30 hover:border-[#c9a961]/40 hover:bg-zinc-800/50 transition-all duration-300'
-                      >
-                        <img
-                          src={product.imageUrl}
-                          alt={product.name}
-                          className='object-contain w-24 h-24 bg-white rounded-lg shadow-lg'
-                        />
-                        <div className='flex-1'>
-                          <div className='flex items-start justify-between'>
-                            <div>
-                              <h3 className='font-serif text-lg text-[#c9a961] font-light'>
-                                {product.name}
-                              </h3>
-                              <div className='flex items-center gap-3 mt-2'>
-                                <span className='text-xs tracking-wider uppercase text-zinc-500'>
-                                  <i className="mr-1.5 fa fa-layer-group text-[#c9a961]/60"></i>
-                                  {product.collection}
-                                </span>
-                                <span className='text-xs text-zinc-600'>•</span>
-                                <span className='text-xs text-zinc-500'>
-                                  ID: {String(product?.id ?? product?._id ?? '').slice(-6) || '—'}
-                                </span>
-                              </div>
-                            </div>
-                            <div className='flex items-center gap-2'>
-                              <button
-                                type='button'
-                                onClick={() => handleEdit(product)}
-                                className='text-sm transition-all opacity-100 lg:opacity-0 lg:group-hover:opacity-100 text-zinc-600 hover:text-[#c9a961]'
-                                title='Edit'
-                              >
-
-                                <i className="fa fa-pen"></i>
-                              </button>
-                              <button
-                                type='button'
-                                onClick={() => handleDelete(product._id || product.id)}
-                                className='text-sm transition-all opacity-100 lg:opacity-0 lg:group-hover:opacity-100 text-zinc-600 hover:text-red-400'
-                              >
-
-                                <i className="fa fa-times"></i>
-                              </button>
-                            </div>
-                          </div>
-
-                          {product.description && (
-                            <p className='mt-3 text-xs text-zinc-500 line-clamp-2'>
-                              {product.description}
-                            </p>
-                          )}
-
-                          <p className='mt-3 text-base font-light'>
-                            <i className="fa fa-tag text-[#c9a961] mr-2 text-xs"></i>
-                            ${Number(product.price).toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )
-              })()}
-            </div>
+        <div className='flex flex-col gap-4 mb-8'>
+          <div className='flex gap-3 border border-[#c9a961]/10 rounded-xl p-2 bg-zinc-900/30 backdrop-blur-xl w-fit'>
+            <button
+              type='button'
+              onClick={() => setActiveTab('products')}
+              className={`px-5 py-2 rounded-lg text-xs tracking-widest uppercase transition-all duration-300 border ${
+                activeTab === 'products'
+                  ? 'bg-[#C9A961] text-black border-[#C9A961]'
+                  : 'bg-transparent text-zinc-400 border-zinc-700 hover:border-[#C9A961] hover:text-[#C9A961]'
+              }`}
+            >
+              Products
+            </button>
+            <button
+              type='button'
+              onClick={() => setActiveTab('orders')}
+              className={`px-5 py-2 rounded-lg text-xs tracking-widest uppercase transition-all duration-300 border ${
+                activeTab === 'orders'
+                  ? 'bg-[#C9A961] text-black border-[#C9A961]'
+                  : 'bg-transparent text-zinc-400 border-zinc-700 hover:border-[#C9A961] hover:text-[#C9A961]'
+              }`}
+            >
+              Orders
+            </button>
           </div>
         </div>
-      </div>
 
-      <style jsx>{`
-        .custom-scroll::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scroll::-webkit-scrollbar-track {
-          background: rgba(255,255,255,0.05);
-          border-radius: 10px;
-        }
-        .custom-scroll::-webkit-scrollbar-thumb {
-          background: #c9a961;
-          border-radius: 10px;
-        }
-      `}</style>
+        {activeTab === 'products' && (
+          <div className='grid grid-cols-1 gap-10 lg:grid-cols-5'>
+            <div className='lg:col-span-2'>
+              <div className='bg-zinc-900/40 backdrop-blur-xl border border-[#c9a961]/15 p-4 sm:p-6 lg:p-8 rounded-xl shadow-2xl shadow-black/50 h-fit lg:sticky lg:top-8'>
+                <div className='flex items-center gap-3 mb-6 sm:mb-8'>
+                  <div className='w-10 h-10 rounded-lg bg-[#c9a961]/10 flex items-center justify-center'>
+                    <i className={`text-[#c9a961] fa ${editingId ? 'fa-pen' : 'fa-plus'}`} />
+                  </div>
+                  <h2 className='font-serif text-2xl font-light'>{editingId ? 'Edit Entry' : 'Create Entry'}</h2>
+                </div>
+
+                <form onSubmit={formik.handleSubmit} className='space-y-6'>
+                  {currentImage && (
+                    <div className='p-4 border rounded-lg bg-zinc-800/50 border-zinc-700/50'>
+                      <p className='mb-3 text-xs tracking-wider uppercase text-zinc-500'>Preview</p>
+                      <img
+                        src={currentImage}
+                        alt='Preview'
+                        className='object-contain w-full h-48 bg-white rounded'
+                        onError={(e) => (e.target.style.display = 'none')}
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className='block mb-3 text-xs tracking-widest uppercase text-zinc-400'>
+                      <i className='fa fa-clock text-[#c9a961] mr-2' />Timepiece Name
+                    </label>
+                    <input
+                      name='name'
+                      placeholder='Patek Philippe Nautilus'
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      value={formik.values.name}
+                      className='w-full bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-4 py-3 text-sm focus:border-[#c9a961] focus:bg-zinc-800 outline-none transition-all duration-300'
+                    />
+                    {formik.touched.name && formik.errors.name && (
+                      <div className='flex items-center mt-2 text-xs text-red-400'>
+                        <i className='mr-1.5 fa fa-exclamation-circle' />{formik.errors.name}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className='grid grid-cols-2 gap-4'>
+                    <div>
+                      <label className='block mb-3 text-xs tracking-widest uppercase text-zinc-400'>
+                        <i className='fa fa-layer-group text-[#c9a961] mr-2' />Collection
+                      </label>
+                      <select
+                        name='collection'
+                        onChange={formik.handleChange}
+                        value={formik.values.collection}
+                        className='w-full bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-4 py-3 text-sm focus:border-[#c9a961] outline-none transition-all'
+                      >
+                        <option value='rolex'>Rolex</option>
+                        <option value='patek-philippe'>Patek Philippe</option>
+                        <option value='audemars-piguet'>Audemars Piguet</option>
+                        <option value='omega'>Omega</option>
+                        <option value='cartier'>Cartier</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className='block mb-3 text-xs tracking-widest uppercase text-zinc-400'>
+                        <i className='fa fa-dollar-sign text-[#c9a961] mr-2' />Retail Price
+                      </label>
+                      <input
+                        name='price'
+                        type='number'
+                        placeholder='12400'
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                        value={formik.values.price}
+                        className='w-full bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-4 py-3 text-sm focus:border-[#c9a961] outline-none transition-all'
+                      />
+                      {formik.touched.price && formik.errors.price && (
+                        <div className='flex items-center mt-2 text-xs text-red-400'>
+                          <i className='mr-1.5 fa fa-exclamation-circle' />{formik.errors.price}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className='block mb-3 text-xs tracking-widest uppercase text-zinc-400'>
+                      <i className='fa fa-image text-[#c9a961] mr-2' />Image Asset
+                    </label>
+                    <div className='space-y-3'>
+                      <input
+                        name='imageUrl'
+                        placeholder='https://example.com/watch.jpg'
+                        onChange={handleUrlChange}
+                        onBlur={formik.handleBlur}
+                        value={formik.values.imageUrl}
+                        className='w-full bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-4 py-3 text-sm focus:border-[#c9a961] outline-none transition-all'
+                      />
+                      <div className='flex items-center gap-3'>
+                        <div className='flex-1 h-px bg-zinc-700/50' />
+                        <span className='text-xs text-zinc-500'>OR</span>
+                        <div className='flex-1 h-px bg-zinc-700/50' />
+                      </div>
+                      <label className='w-full bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-4 py-3 text-sm hover:border-[#c9a961] cursor-pointer transition-all flex items-center justify-center gap-2'>
+                        <i className='fa fa-upload text-[#c9a961]' />
+                        <span className='text-zinc-400'>Choose File</span>
+                        <input type='file' accept='image/*' onChange={handleFileChange} className='hidden' />
+                      </label>
+                      {formik.values.imageFile && (
+                        <p className='text-xs text-[#c9a961]'>
+                          <i className='mr-1 fa fa-check' />{formik.values.imageFile.name}
+                        </p>
+                      )}
+                    </div>
+                    {formik.touched.imageUrl && formik.errors.imageUrl && (
+                      <div className='flex items-center mt-2 text-xs text-red-400'>
+                        <i className='mr-1.5 fa fa-exclamation-circle' />{formik.errors.imageUrl}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className='block mb-3 text-xs tracking-widest uppercase text-zinc-400'>
+                      <i className='fa fa-align-left text-[#c9a961] mr-2' />Description
+                    </label>
+                    <textarea
+                      name='description'
+                      placeholder='Brief description...'
+                      rows='3'
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      value={formik.values.description}
+                      className='w-full bg-zinc-800/50 border border-zinc-700/50 rounded-lg px-4 py-3 text-sm focus:border-[#c9a961] outline-none transition-all resize-none'
+                    />
+                  </div>
+
+                  {editingId && (
+                    <button
+                      type='button'
+                      onClick={handleCancelEdit}
+                      className='w-full border border-zinc-600 text-zinc-300 py-3 rounded-lg font-medium hover:bg-zinc-800 transition-all duration-300 uppercase tracking-wider text-sm mb-3'
+                    >
+                      <i className='mr-2 fa fa-times' />Cancel Edit
+                    </button>
+                  )}
+
+                  <button
+                    type='submit'
+                    disabled={formik.isSubmitting || loading}
+                    className='w-full bg-linear-to-r from-[#c9a961] to-[#b89852] text-black py-3.5 rounded-lg font-medium hover:shadow-lg hover:shadow-[#c9a961]/20 hover:scale-[1.02] mt-8 transition-all duration-300 uppercase tracking-wider text-sm disabled:opacity-60 disabled:cursor-not-allowed'
+                  >
+                    <i className={`mr-2 fa ${editingId ? 'fa-save' : 'fa-plus'}`} />
+                    {loading || formik.isSubmitting
+                      ? editingId
+                        ? 'Updating...'
+                        : 'Saving...'
+                      : editingId
+                        ? 'Update Timepiece'
+                        : 'Register Timepiece'}
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            <div className='lg:col-span-3'>
+              <div className='bg-zinc-900/40 backdrop-blur-xl border border-[#c9a961]/15 p-8 rounded-xl shadow-2xl shadow-black/50'>
+                <div className='flex items-center gap-3 mb-8 pb-6 border-b border-[#c9a961]/10'>
+                  <div className='w-10 h-10 rounded-lg bg-[#c9a961]/10 flex items-center justify-center'>
+                    <i className='fa fa-gem text-[#c9a961]' />
+                  </div>
+                  <h2 className='font-serif text-2xl font-light'>Collection</h2>
+                  <div className='flex items-center gap-2 ml-auto'>
+                    <span className='bg-[#c9a961]/10 text-[#c9a961] text-xs px-4 py-2 rounded-full font-medium tracking-wider'>
+                      {products.length} {products.length === 1 ? 'PIECE' : 'PIECES'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className='flex flex-wrap justify-center gap-3 mb-6'>
+                  {COLLECTIONS.map((col) => (
+                    <button
+                      key={col.key}
+                      type='button'
+                      onClick={() => setActiveCollection(col.key)}
+                      className={`px-5 py-2 rounded-full text-xs tracking-widest uppercase transition-all duration-300 border ${
+                        activeCollection === col.key
+                          ? 'bg-[#C9A961] text-black border-[#C9A961]'
+                          : 'bg-transparent text-zinc-400 border-zinc-700 hover:border-[#C9A961] hover:text-[#C9A961]'
+                      }`}
+                    >
+                      {col.label}
+                    </button>
+                  ))}
+                </div>
+
+                {(() => {
+                  const filteredProducts =
+                    activeCollection === 'all' ? products : products.filter((p) => p.collection === activeCollection)
+
+                  if (filteredProducts.length === 0) {
+                    return (
+                      <div className='py-16 text-center'>
+                        <div className='w-20 h-20 mx-auto rounded-full bg-[#c9a961]/5 flex items-center justify-center mb-6'>
+                          <i className='fa fa-gem text-[#c9a961]/30 text-3xl' />
+                        </div>
+                        <p className='font-serif text-lg text-zinc-300'>No Entries</p>
+                        <p className='mt-2 text-sm text-zinc-600'>No timepieces found for this collection</p>
+                      </div>
+                    )
+                  }
+
+                  return (
+                    <div className='pr-2 space-y-4 overflow-y-auto max-h-[60vh] lg:max-h-[70vh] custom-scroll'>
+                      {filteredProducts.map((product) => (
+                        <div
+                          key={product._id || product.id}
+                          className='group flex gap-5 bg-zinc-800/30 p-5 rounded-xl border border-zinc-700/30 hover:border-[#c9a961]/40 hover:bg-zinc-800/50 transition-all duration-300'
+                        >
+                          <img
+                            src={product.imageUrl}
+                            alt={product.name}
+                            className='object-contain w-24 h-24 bg-white rounded-lg shadow-lg'
+                          />
+                          <div className='flex-1'>
+                            <div className='flex items-start justify-between'>
+                              <div>
+                                <h3 className='font-serif text-lg text-[#c9a961] font-light'>{product.name}</h3>
+                                <div className='flex items-center gap-3 mt-2'>
+                                  <span className='text-xs tracking-wider uppercase text-zinc-500'>
+                                    <i className='mr-1.5 fa fa-layer-group text-[#c9a961]/60' />
+                                    {product.collection}
+                                  </span>
+                                  <span className='text-xs text-zinc-600'>•</span>
+                                  <span className='text-xs text-zinc-500'>
+                                    ID: {String(product?.id ?? product?._id ?? '').slice(-6) || '—'}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className='flex items-center gap-2'>
+                                <button
+                                  type='button'
+                                  onClick={() => handleEdit(product)}
+                                  className='text-sm transition-all opacity-100 lg:opacity-0 lg:group-hover:opacity-100 text-zinc-600 hover:text-[#c9a961]'
+                                  title='Edit'
+                                >
+                                  <i className='fa fa-pen' />
+                                </button>
+                                <button
+                                  type='button'
+                                  onClick={() => handleDelete(product._id || product.id)}
+                                  className='text-sm transition-all opacity-100 lg:opacity-0 lg:group-hover:opacity-100 text-zinc-600 hover:text-red-400'
+                                >
+                                  <i className='fa fa-times' />
+                                </button>
+                              </div>
+                            </div>
+
+                            {product.description && (
+                              <p className='mt-3 text-xs text-zinc-500 line-clamp-2'>{product.description}</p>
+                            )}
+
+                            <p className='mt-3 text-base font-light'>
+                              <i className='fa fa-tag text-[#c9a961] mr-2 text-xs' />
+                              ${Number(product.price).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                })()}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'orders' && (
+          <div className='w-full'>
+            <AdminOrders />
+          </div>
+        )}
+
+        <style jsx>{`
+          .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+          }
+          .custom-scroll::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+          }
+          .custom-scroll::-webkit-scrollbar-thumb {
+            background: #c9a961;
+            border-radius: 10px;
+          }
+        `}</style>
+      </div>
     </div>
   )
 }
 
-
 export default AdminDashboard
+
