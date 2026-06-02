@@ -126,14 +126,33 @@ const AdminOrders = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search])
 
-  const openOrder = (order) => {
-    setSelectedOrder(order)
+  const [selectedOrderLoading, setSelectedOrderLoading] = useState(false)
+
+  const openOrder = async (order) => {
+    const id = order?._id || order?.id
+    if (!id) return
+
+    setSelectedOrderLoading(true)
+    try {
+      // Load full order details lazily to keep the list payload small.
+      const full = await getJson(`orders/${id}`)
+      const data = full?.data || {}
+      setSelectedOrder(data)
+    } catch (err) {
+      console.error(err)
+      showToast(getErrorMessage(err, 'Failed to load order details.'), 'error')
+    } finally {
+      setSelectedOrderLoading(false)
+    }
   }
+
 
   const closeModal = () => {
     setSelectedOrder(null)
     setStatusUpdateLoading(false)
+    setSelectedOrderLoading(false)
   }
+
 
   const handleStatusUpdate = async (orderId, newStatusSystem) => {
     setStatusUpdateLoading(true)
@@ -317,12 +336,17 @@ const AdminOrders = () => {
                   </tr>
                 ) : orderRows.length ? (
                   orderRows.map((o) => {
+                    // List payload is summary-only (no orderDetails.items).
+                    // Show a lightweight products hint; full products are loaded in the modal.
                     const items = o?.orderDetails?.items || []
-                    const productsSummary = items
-                      .map((it) => `${it.name} (x${it.quantity})`)
-                      .slice(0, 2)
-                      .join(', ')
+                    const productsSummary = items.length
+                      ? items
+                          .map((it) => `${it.name} (x${it.quantity})`)
+                          .slice(0, 2)
+                          .join(', ')
+                      : 'View to see products'
                     const extra = items.length > 2 ? ` +${items.length - 2} more` : ''
+
 
                     const amountStr = formatMoney(o?.amount, o?.currency)
 
@@ -362,6 +386,7 @@ const AdminOrders = () => {
                             ? new Date(o.orderDetails.placedAt).toLocaleString()
                             : new Date(o.createdAt).toLocaleString()}
                         </td>
+
                         <td className='py-4'>
                           <button
                             type='button'
@@ -517,17 +542,26 @@ const AdminOrders = () => {
                     </tr>
                   </thead>
                   <tbody className='divide-y divide-zinc-800/40'>
-                    {(selectedOrder?.orderDetails?.items || []).map((it, idx) => (
-                      <tr key={`${it.productId}-${idx}`}>
-                        <td className='py-3'>
-                          <div className='font-light'>{it.name}</div>
-                          {it.collection && <div className='text-xs text-zinc-500'>{it.collection}</div>}
+                    {selectedOrderLoading ? (
+                      <tr>
+                        <td className='py-10 text-center text-zinc-500' colSpan={4}>
+                          Loading order...
                         </td>
-                        <td className='py-3'>{it.quantity}</td>
-                        <td className='py-3'>{formatMoney(Math.round(Number(it.price) * 100), selectedOrder?.currency)}</td>
-                        <td className='py-3'>{formatMoney(Math.round(Number(it.lineTotal) * 100), selectedOrder?.currency)}</td>
                       </tr>
-                    ))}
+                    ) : (
+                      (selectedOrder?.orderDetails?.items || []).map((it, idx) => (
+                        <tr key={`${it.productId}-${idx}`}>
+                          <td className='py-3'>
+                            <div className='font-light'>{it.name}</div>
+                            {it.collection && <div className='text-xs text-zinc-500'>{it.collection}</div>}
+                          </td>
+                          <td className='py-3'>{it.quantity}</td>
+                          <td className='py-3'>{formatMoney(Math.round(Number(it.price) * 100), selectedOrder?.currency)}</td>
+                          <td className='py-3'>{formatMoney(Math.round(Number(it.lineTotal) * 100), selectedOrder?.currency)}</td>
+                        </tr>
+                      ))
+                    )}
+
                   </tbody>
                 </table>
               </div>
