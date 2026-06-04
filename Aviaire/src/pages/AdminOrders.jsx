@@ -524,7 +524,9 @@ const AdminOrders = () => {
 
                       try {
                         await handleStatusUpdate(id, newStatus)
+                        closeModal()
                       } catch (err) {
+
                         // handleStatusUpdate already toasts errors
                         console.error(err)
                       }
