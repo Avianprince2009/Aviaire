@@ -133,12 +133,22 @@ const AdminOrders = () => {
     const id = order?._id || order?.id
     if (!id) return
 
-    setSelectedOrderLoading(true)
+    // Fast path: list payload already includes orderDetails.total/placedAt for most cases.
+    // If items are not present, fetch full order in background.
+    if (!order?.orderDetails?.items?.length) {
+      setSelectedOrderLoading(true)
+    }
+
+    // Immediately show modal with whatever we already have to avoid UI delay.
+    setSelectedOrder(order)
+
     try {
-      // Load full order details lazily to keep the list payload small.
-      const full = await getJson(`orders/${id}`)
-      const data = full?.data || {}
-      setSelectedOrder(data)
+      // Load full order details lazily only when items are missing.
+      if (!order?.orderDetails?.items?.length) {
+        const full = await getJson(`orders/${id}`)
+        const data = full?.data || {}
+        setSelectedOrder(data)
+      }
     } catch (err) {
       console.error(err)
       showToast(getErrorMessage(err, 'Failed to load order details.'), 'error')
@@ -146,6 +156,7 @@ const AdminOrders = () => {
       setSelectedOrderLoading(false)
     }
   }
+
 
 
   const closeModal = () => {
