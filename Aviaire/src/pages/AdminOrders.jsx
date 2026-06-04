@@ -510,11 +510,31 @@ const AdminOrders = () => {
                   </select>
                 </div>
 
-                <div className='mt-3 text-xs text-zinc-500'>
-                  Saved to MongoDB and reflected immediately.
-                </div>
 
-                <div className='mt-4'>
+
+                <div className='grid grid-cols-1 gap-3 mt-4'>
+                  <button
+                    type='button'
+                    onClick={async () => {
+                      if (!selectedOrder?._id && !selectedOrder?.id) return
+                      const id = selectedOrder?._id || selectedOrder?.id
+                      const newStatus = selectedOrder?.orderStatusSystem || 'pending'
+                      const ok = window.confirm('Update this order status?')
+                      if (!ok) return
+
+                      try {
+                        await handleStatusUpdate(id, newStatus)
+                      } catch (err) {
+                        // handleStatusUpdate already toasts errors
+                        console.error(err)
+                      }
+                    }}
+                    className='w-full py-3 font-medium text-black transition-all duration-300 border rounded-lg bg-[#c9a961]/90 border-[#c9a961] hover:bg-[#c9a961] disabled:opacity-60 disabled:cursor-not-allowed'
+                    disabled={statusUpdateLoading}
+                  >
+                    <i className='mr-2 fa fa-save' /> Update
+                  </button>
+
                   <button
                     type='button'
                     onClick={async () => {
@@ -539,6 +559,7 @@ const AdminOrders = () => {
                     <i className='mr-2 fa fa-trash' /> Delete Order
                   </button>
                 </div>
+
               </div>
             </div>
 
