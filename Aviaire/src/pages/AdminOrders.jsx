@@ -316,7 +316,7 @@ const AdminOrders = () => {
 
           {/* Orders table */}
           <div className='mt-8 overflow-x-auto'>
-            <table className='w-full text-sm'>
+            <table className='w-full text-sm min-w-[900px]'>
               <thead className='text-xs tracking-widest uppercase text-zinc-500'>
                 <tr>
                   <th className='py-3 text-left'>Order ID</th>
@@ -349,7 +349,6 @@ const AdminOrders = () => {
                       : 'View to see products'
                     const extra = items.length > 2 ? ` +${items.length - 2} more` : ''
 
-
                     const amountStr = formatMoney(o?.amount, o?.currency)
 
                     return (
@@ -365,21 +364,21 @@ const AdminOrders = () => {
                         </td>
                         <td className='py-4'>
                           <div className='font-light'>{o?.shipping?.fullName || '—'}</div>
-                          <div className='text-xs text-zinc-500'>{o?.shipping?.email || ''}</div>
+                          <div className='text-xs break-words text-zinc-500'>{o?.shipping?.email || ''}</div>
                         </td>
                         <td className='py-4'>
-                          <div className='text-xs text-zinc-300'>{productsSummary}{extra}</div>
+                          <div className='text-xs break-words text-zinc-300'>{productsSummary}{extra}</div>
                         </td>
                         <td className='py-4'>
-                          <div className='font-light'>{amountStr}</div>
+                          <div className='font-light break-words'>{amountStr}</div>
                         </td>
                         <td className='py-4'>
-                          <span className='px-3 py-1 text-xs border rounded-full bg-zinc-800/40 border-zinc-700/50'>
+                          <span className='px-3 py-1 text-xs break-words border rounded-full bg-zinc-800/40 border-zinc-700/50'>
                             {o.paymentStatus}
                           </span>
                         </td>
                         <td className='py-4'>
-                          <span className='px-3 py-1 text-xs border rounded-full bg-zinc-800/40 border-zinc-700/50'>
+                          <span className='px-3 py-1 text-xs break-words border rounded-full bg-zinc-800/40 border-zinc-700/50'>
                             {STATUS_LABEL[o.orderStatusSystem] || o.orderStatus}
                           </span>
                         </td>
@@ -393,7 +392,7 @@ const AdminOrders = () => {
                           <button
                             type='button'
                             onClick={() => openOrder(o)}
-                            className='px-3 py-2 rounded-lg border border-zinc-700 text-zinc-300 hover:border-[#c9a961]'
+                            className='px-3 py-2 rounded-lg border border-zinc-700 text-zinc-300 hover:border-[#c9a961] whitespace-nowrap'
                           >
                             View
                           </button>
