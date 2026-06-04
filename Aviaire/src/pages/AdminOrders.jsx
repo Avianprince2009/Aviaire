@@ -120,8 +120,9 @@ const AdminOrders = () => {
 
   useEffect(() => {
     const t = window.setTimeout(() => {
-      setPage(1)
-      // fetch will be triggered by the [page, limit, status] effect
+
+      // trigger fetch via [page, limit, status]
+      fetchOrders()
     }, 400)
     return () => window.clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
