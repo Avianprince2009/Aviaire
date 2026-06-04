@@ -324,10 +324,11 @@ const Checkout = ({ cart = [] }) => {
                 <p className="text-sm text-zinc-400">Total Items</p>
                 <p className="text-sm text-white/90">{itemsCount}</p>
               </div>
-              <div className="flex items-center justify-between mt-3 gap-3">
+              <div className="flex items-center justify-between gap-3 mt-3">
                 <p className="text-sm text-zinc-400">Grand Total</p>
-                <p className="text-base sm:text-lg md:text-2xl font-light text-white whitespace-nowrap overflow-hidden text-ellipsis">
-                  <span className="text-[#c9a961]">$</span>{total.toLocaleString()}
+                <p className="max-w-full text-base font-light text-white break-words sm:text-lg md:text-2xl">
+                  <span className="text-[#c9a961] inline-block">$</span>
+                  {total.toLocaleString()}
                 </p>
               </div>
 

@@ -183,20 +183,20 @@ const AdminOrders = () => {
     <div className='flex items-center justify-between mt-6'>
       <button
         type='button'
-        className='px-4 py-2 rounded-lg border border-zinc-700 text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed'
+        className='px-4 py-2 border rounded-lg border-zinc-700 text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed'
         onClick={() => setPage((p) => Math.max(1, p - 1))}
         disabled={page <= 1}
       >
         Prev
       </button>
 
-      <div className='text-xs text-zinc-500 tracking-widest uppercase'>
+      <div className='text-xs tracking-widest uppercase text-zinc-500'>
         Page {page} of {totalPages} ({totalCount} total)
       </div>
 
       <button
         type='button'
-        className='px-4 py-2 rounded-lg border border-zinc-700 text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed'
+        className='px-4 py-2 border rounded-lg border-zinc-700 text-zinc-300 disabled:opacity-40 disabled:cursor-not-allowed'
         onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
         disabled={page >= totalPages}
       >
@@ -218,7 +218,7 @@ const AdminOrders = () => {
         </div>
       )}
 
-      <div className='px-4 sm:px-6 lg:px-8 py-6 mx-auto max-w-8xl'>
+      <div className='px-4 py-6 mx-auto sm:px-6 lg:px-8 max-w-8xl'>
         <div className='mb-8 pb-6 border-b border-[#c9a961]/10'>
           <div className='flex items-center gap-3'>
             <div className='w-12 h-12 rounded-full bg-linear-to-br from-[#c9a961] to-[#8b7544] flex items-center justify-center'>
@@ -232,32 +232,32 @@ const AdminOrders = () => {
         </div>
 
         {/* Summary cards */}
-        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8'>
+        <div className='grid grid-cols-1 gap-4 mb-8 sm:grid-cols-2 lg:grid-cols-5'>
           <div className='bg-zinc-900/40 backdrop-blur-xl border border-[#c9a961]/15 p-5 rounded-xl'>
-            <div className='text-xs text-zinc-500 uppercase tracking-widest'>Total Orders</div>
+            <div className='text-xs tracking-widest uppercase text-zinc-500'>Total Orders</div>
             <div className='mt-2 text-3xl font-light'>{totalCount}</div>
           </div>
           <div className='bg-zinc-900/40 backdrop-blur-xl border border-[#c9a961]/15 p-5 rounded-xl'>
-            <div className='text-xs text-zinc-500 uppercase tracking-widest'>Pending Orders</div>
+            <div className='text-xs tracking-widest uppercase text-zinc-500'>Pending Orders</div>
             <div className='mt-2 text-3xl font-light'>{stats.pending}</div>
           </div>
           <div className='bg-zinc-900/40 backdrop-blur-xl border border-[#c9a961]/15 p-5 rounded-xl'>
-            <div className='text-xs text-zinc-500 uppercase tracking-widest'>Completed Orders</div>
+            <div className='text-xs tracking-widest uppercase text-zinc-500'>Completed Orders</div>
             <div className='mt-2 text-3xl font-light'>{stats.completed}</div>
           </div>
           <div className='bg-zinc-900/40 backdrop-blur-xl border border-[#c9a961]/15 p-5 rounded-xl sm:col-span-2 lg:col-span-1'>
-            <div className='text-xs text-zinc-500 uppercase tracking-widest'>Total Revenue</div>
+            <div className='text-xs tracking-widest uppercase text-zinc-500'>Total Revenue</div>
             <div className='mt-2 text-3xl font-light'>${formatMoney(stats.totalRevenueKobo).replace('₦', '').trim()}</div>
           </div>
           <div className='bg-zinc-900/40 backdrop-blur-xl border border-[#c9a961]/15 p-5 rounded-xl'>
-            <div className='text-xs text-zinc-500 uppercase tracking-widest'>Total Customers</div>
+            <div className='text-xs tracking-widest uppercase text-zinc-500'>Total Customers</div>
             <div className='mt-2 text-3xl font-light'>{stats.totalCustomers}</div>
           </div>
         </div>
 
         {/* Filters */}
         <div className='bg-zinc-900/40 backdrop-blur-xl border border-[#c9a961]/15 p-6 rounded-xl shadow-2xl shadow-black/50'>
-          <div className='flex flex-col lg:flex-row gap-4 lg:items-end'>
+          <div className='flex flex-col gap-4 lg:flex-row lg:items-end'>
             <div className='flex-1'>
               <label className='block mb-2 text-xs tracking-widest uppercase text-zinc-400'>
                 <i className='fa fa-search text-[#c9a961] mr-2' /> Search (name/email)
@@ -315,16 +315,16 @@ const AdminOrders = () => {
           {/* Orders table */}
           <div className='mt-8 overflow-x-auto'>
             <table className='w-full text-sm'>
-              <thead className='text-xs uppercase tracking-widest text-zinc-500'>
+              <thead className='text-xs tracking-widest uppercase text-zinc-500'>
                 <tr>
-                  <th className='text-left py-3'>Order ID</th>
-                  <th className='text-left py-3'>Customer</th>
-                  <th className='text-left py-3'>Products</th>
-                  <th className='text-left py-3'>Total</th>
-                  <th className='text-left py-3'>Payment</th>
-                  <th className='text-left py-3'>Order Status</th>
-                  <th className='text-left py-3'>Date</th>
-                  <th className='text-left py-3'>Actions</th>
+                  <th className='py-3 text-left'>Order ID</th>
+                  <th className='py-3 text-left'>Customer</th>
+                  <th className='py-3 text-left'>Products</th>
+                  <th className='py-3 text-left'>Total</th>
+                  <th className='py-3 text-left'>Payment</th>
+                  <th className='py-3 text-left'>Order Status</th>
+                  <th className='py-3 text-left'>Date</th>
+                  <th className='py-3 text-left'>Actions</th>
                 </tr>
               </thead>
               <tbody className='divide-y divide-zinc-800/40'>
@@ -372,12 +372,12 @@ const AdminOrders = () => {
                           <div className='font-light'>{amountStr}</div>
                         </td>
                         <td className='py-4'>
-                          <span className='text-xs px-3 py-1 rounded-full bg-zinc-800/40 border border-zinc-700/50'>
+                          <span className='px-3 py-1 text-xs border rounded-full bg-zinc-800/40 border-zinc-700/50'>
                             {o.paymentStatus}
                           </span>
                         </td>
                         <td className='py-4'>
-                          <span className='text-xs px-3 py-1 rounded-full bg-zinc-800/40 border border-zinc-700/50'>
+                          <span className='px-3 py-1 text-xs border rounded-full bg-zinc-800/40 border-zinc-700/50'>
                             {STATUS_LABEL[o.orderStatusSystem] || o.orderStatus}
                           </span>
                         </td>
@@ -422,7 +422,7 @@ const AdminOrders = () => {
           <div className='relative w-[92%] max-w-3xl rounded-2xl border border-[#C9A961]/25 bg-[#0b0b0b]/95 backdrop-blur-xl shadow-2xl shadow-black/60 p-6 max-h-[80vh] overflow-y-auto'>
             <div className='flex items-start justify-between gap-4'>
               <div>
-                <div className='text-xs text-zinc-500 tracking-widest uppercase'>Order</div>
+                <div className='text-xs tracking-widest uppercase text-zinc-500'>Order</div>
                 <h2 className='text-2xl font-serif font-light mt-1 text-[#c9a961]'>{selectedOrder.orderId}</h2>
                 <div className='mt-2 text-sm text-zinc-300'>
                   Placed: {selectedOrder?.orderDetails?.placedAt ? new Date(selectedOrder.orderDetails.placedAt).toLocaleString() : new Date(selectedOrder.createdAt).toLocaleString()}
@@ -438,16 +438,16 @@ const AdminOrders = () => {
               </button>
             </div>
 
-            <div className='mt-6 grid grid-cols-1 md:grid-cols-2 gap-5'>
-              <div className='bg-zinc-900/40 border border-zinc-800/60 rounded-xl p-5'>
-                <div className='text-xs uppercase tracking-widest text-zinc-500'>Customer</div>
-                <div className='mt-3 font-light text-lg'>{selectedOrder?.shipping?.fullName || '—'}</div>
+            <div className='grid grid-cols-1 gap-5 mt-6 md:grid-cols-2'>
+              <div className='p-5 border bg-zinc-900/40 border-zinc-800/60 rounded-xl'>
+                <div className='text-xs tracking-widest uppercase text-zinc-500'>Customer</div>
+                <div className='mt-3 text-lg font-light'>{selectedOrder?.shipping?.fullName || '—'}</div>
                 <div className='mt-1 text-sm text-zinc-300'>{selectedOrder?.shipping?.email || '—'}</div>
                 {selectedOrder?.shipping?.phone && (
                   <div className='mt-1 text-sm text-zinc-300'>Phone: {selectedOrder.shipping.phone}</div>
                 )}
 
-                <div className='mt-4 text-xs uppercase tracking-widest text-zinc-500'>Shipping address</div>
+                <div className='mt-4 text-xs tracking-widest uppercase text-zinc-500'>Shipping address</div>
                 <div className='mt-2 text-sm text-zinc-300'>
                   {selectedOrder?.shipping?.address1 || ''}
                   {selectedOrder?.shipping?.city ? `, ${selectedOrder.shipping.city}` : ''}
@@ -456,16 +456,16 @@ const AdminOrders = () => {
                 </div>
               </div>
 
-              <div className='bg-zinc-900/40 border border-zinc-800/60 rounded-xl p-5'>
-                <div className='text-xs uppercase tracking-widest text-zinc-500'>Totals & statuses</div>
-                <div className='mt-3 flex items-center justify-between'>
+              <div className='p-5 border bg-zinc-900/40 border-zinc-800/60 rounded-xl'>
+                <div className='text-xs tracking-widest uppercase text-zinc-500'>Totals & statuses</div>
+                <div className='flex items-center justify-between mt-3'>
                   <div className='text-sm text-zinc-300'>Total Amount</div>
                   <div className='text-lg font-light'>{formatMoney(selectedOrder?.amount, selectedOrder?.currency)}</div>
                 </div>
 
-                <div className='mt-3 flex items-center justify-between'>
+                <div className='flex items-center justify-between mt-3'>
                   <div className='text-sm text-zinc-300'>Payment Status</div>
-                  <div className='text-xs px-3 py-1 rounded-full bg-zinc-800/40 border border-zinc-700/50'>
+                  <div className='px-3 py-1 text-xs border rounded-full bg-zinc-800/40 border-zinc-700/50'>
                     {selectedOrder?.paymentStatus}
                   </div>
                 </div>
@@ -474,7 +474,7 @@ const AdminOrders = () => {
                   <label className='block text-xs tracking-widest uppercase text-zinc-400'>
                     Order Status System
                   </label>
-                  <div className='text-sm text-zinc-300 mt-2'>
+                  <div className='mt-2 text-sm text-zinc-300'>
                     {selectedOrder?.orderStatusSystem || 'pending'}
                   </div>
                 </div>
@@ -520,25 +520,25 @@ const AdminOrders = () => {
                         showToast(getErrorMessage(err, 'Failed to delete order.'), 'error')
                       }
                     }}
-                    className='w-full bg-red-500/10 border border-red-500/40 text-red-300 py-3 rounded-lg font-medium hover:bg-red-500/15 transition-all duration-300'
+                    className='w-full py-3 font-medium text-red-300 transition-all duration-300 border rounded-lg bg-red-500/10 border-red-500/40 hover:bg-red-500/15'
                     disabled={statusUpdateLoading}
                   >
-                    <i className='fa fa-trash mr-2' /> Delete Order
+                    <i className='mr-2 fa fa-trash' /> Delete Order
                   </button>
                 </div>
               </div>
             </div>
 
-            <div className='mt-6 bg-zinc-900/40 border border-zinc-800/60 rounded-xl p-5'>
-              <div className='text-xs uppercase tracking-widest text-zinc-500'>Products Ordered</div>
+            <div className='p-5 mt-6 border bg-zinc-900/40 border-zinc-800/60 rounded-xl'>
+              <div className='text-xs tracking-widest uppercase text-zinc-500'>Products Ordered</div>
               <div className='mt-4 overflow-x-auto'>
                 <table className='w-full text-sm'>
-                  <thead className='text-xs uppercase tracking-widest text-zinc-500'>
+                  <thead className='text-xs tracking-widest uppercase text-zinc-500'>
                     <tr>
-                      <th className='text-left py-2'>Product</th>
-                      <th className='text-left py-2'>Qty</th>
-                      <th className='text-left py-2'>Unit Price</th>
-                      <th className='text-left py-2'>Line Total</th>
+                      <th className='py-2 text-left'>Product</th>
+                      <th className='py-2 text-left'>Qty</th>
+                      <th className='py-2 text-left'>Unit Price</th>
+                      <th className='py-2 text-left'>Line Total</th>
                     </tr>
                   </thead>
                   <tbody className='divide-y divide-zinc-800/40'>
@@ -575,4 +575,3 @@ const AdminOrders = () => {
 }
 
 export default AdminOrders
-
