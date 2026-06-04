@@ -239,7 +239,8 @@ const AdminOrders = () => {
             </div>
             <div>
               <h1 className='text-4xl font-serif font-light text-[#c9a961] tracking-wide'>Orders</h1>
-              <p className='mt-1 text-sm tracking-widest uppercase text-zinc-500'>L'ALLURE</p>
+              <p className='mt-1 text-sm tracking-widest uppercase text-zinc-500'>L'LALLURE</p>
+
             </div>
           </div>
         </div>
