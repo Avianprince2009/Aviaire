@@ -93,7 +93,8 @@ const AdminOrders = () => {
       qs.set('page', String(page))
       qs.set('limit', String(limit))
 
-      const data = await getJson(`orders?${qs.toString()}`)
+      const data = await getJson(`admin/orders?${qs.toString()}`)
+
       // Ignore stale slow responses
       if (requestId !== fetchRequestIdRef.current) return
 
