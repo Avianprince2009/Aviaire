@@ -1,4 +1,5 @@
-import React from 'react'
+import React, { useRef } from 'react'
+
 import { Link, useNavigate } from 'react-router-dom'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
@@ -7,6 +8,8 @@ const logo = "/logo.png";
 
 const Register = () => {
   const navigate = useNavigate()
+  const inFlightRef = useRef(false)
+
 
   const formik = useFormik({
     initialValues: {
@@ -30,8 +33,11 @@ const Register = () => {
         .required('Please confirm your password'),
     }),
     onSubmit: async (values, { setSubmitting, setStatus }) => {
+      if (inFlightRef.current) return
+      inFlightRef.current = true
       try {
         const { confirmPassword, ...payload } = values
+
         const data = await postJson('register', payload)
         if (!data) throw new Error('Registration failed: empty response')
 
@@ -41,7 +47,9 @@ const Register = () => {
         setStatus({ error: getErrorMessage(error, 'Registration failed.') })
       } finally {
         setSubmitting(false)
+        inFlightRef.current = false
       }
+
     },
   })
 
@@ -62,7 +70,7 @@ const Register = () => {
 
           <form onSubmit={formik.handleSubmit} className="space-y-6">
               {formik.status?.error && (
-                <p className="mt-2 text-xs text-red-400 text-center">{formik.status.error}</p>
+                <p className="mt-2 text-xs text-center text-red-400">{formik.status.error}</p>
               )}
             <div>
               <label className="block text-white/60 text-xs tracking-[0.2em] uppercase mb-3">
@@ -134,7 +142,8 @@ const Register = () => {
 
             <button
               type="submit"
-              disabled={formik.isSubmitting}
+              disabled={formik.isSubmitting || inFlightRef.current}
+
               className="w-full bg-[#C9A961] text-black py-4 text-xs tracking-[0.3em] uppercase hover:bg-[#B89851] transition mt-2 disabled:opacity-60"
             >
               {formik.isSubmitting ? 'Requesting...' : 'Request Access'}

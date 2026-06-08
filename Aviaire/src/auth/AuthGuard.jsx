@@ -1,9 +1,16 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { authStore } from './authStore'
 
 const AuthGuard = ({ children, requireAuth = false, requireAdmin = false }) => {
   const location = useLocation()
+  const [, setTick] = useState(0)
+
+  useEffect(() => {
+    const handler = () => setTick((t) => t + 1)
+    window.addEventListener('authChange', handler)
+    return () => window.removeEventListener('authChange', handler)
+  }, [])
 
   if (requireAuth && !authStore.isAuthed()) {
     return (

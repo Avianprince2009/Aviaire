@@ -4,6 +4,15 @@ import { authStore } from '../auth/authStore'
 
 const DEFAULT_TIMEOUT = 6000
 
+// Auth endpoints (login/register) can take longer due to bcrypt + MongoDB.
+// Increasing timeout prevents intermittent AbortController-triggered failures.
+const AUTH_TIMEOUT = 20000
+
+function isAuthEndpoint(path) {
+  const p = String(path || '').toLowerCase()
+  return p === 'login' || p === 'register' || p.endsWith('/login') || p.endsWith('/register')
+}
+
 function createApiError(message, meta = {}) {
   const err = new Error(message || 'Request failed')
   if (meta.status != null) err.status = meta.status
@@ -81,9 +90,19 @@ export async function request(path, opts = {}) {
     signal: externalSignal,
   } = opts
 
+  // Extend timeout for login/register to prevent intermittent AbortController failures.
+  const finalTimeout = isAuthEndpoint(path)
+    ? Math.max(timeout, AUTH_TIMEOUT)
+    : timeout
+
   const url = /^https?:\/\//i.test(path) ? path : apiUrl(path)
-  
-  console.log('[api] Constructing request:', { method, pathArg: path, finalUrl: url })
+
+  console.log('[api] Constructing request:', {
+    method,
+    pathArg: path,
+    finalUrl: url,
+    timeout: finalTimeout,
+  })
 
   const requestHeaders = {
     Accept: 'application/json',
@@ -129,7 +148,7 @@ export async function request(path, opts = {}) {
 
   if (controller) {
     fetchOpts.signal = controller.signal
-    timeoutId = setTimeout(() => controller.abort(), timeout)
+    timeoutId = setTimeout(() => controller.abort(), finalTimeout)
   } else if (externalSignal) {
     fetchOpts.signal = externalSignal
   }
@@ -168,7 +187,7 @@ export async function request(path, opts = {}) {
         method: method.toLowerCase(),
         data: json ?? body,
         headers: requestHeaders,
-        timeout,
+        timeout: finalTimeout,
         signal: controller?.signal || externalSignal,
       })
       return res.data

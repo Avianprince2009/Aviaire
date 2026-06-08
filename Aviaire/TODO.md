@@ -1,8 +1,9 @@
-# TODO
+# TODO - Authentication stability fixes (login/register)
 
-- [x] Frontend: speed up Admin orders load by removing duplicate fetches during search typing.
-- [x] Frontend: ensure only the latest orders request updates state (ignore stale slow responses).
-
-- [x] Frontend: after changes, run dev build/lint and manually test AdminOrders page for correct pagination + status updates.
+- [x] Update `src/services/apiClient.js` to increase/override timeout for `login` and `register` requests.
+- [x] Add an in-flight lock to `src/pages/Login.jsx` to prevent overlapping submissions.
+- [x] Add an in-flight lock to `src/pages/Register.jsx` to prevent overlapping submissions.
+- [x] If needed, make `src/auth/AuthGuard.jsx` rerender on `authChange`.
+- [ ] Run frontend lint/build/tests (if available) and manually verify: login succeeds first attempt; register succeeds first attempt; no transient unauth redirects.
 
 

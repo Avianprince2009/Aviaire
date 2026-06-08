@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
+
 import { Link, useNavigate } from 'react-router-dom'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
@@ -9,6 +10,8 @@ import { postJson, getErrorMessage } from '../services/apiClient'
 const Login = () => {
   const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
+  const inFlightRef = useRef(false)
+
 
   const formik = useFormik({
     initialValues: {
@@ -24,8 +27,11 @@ const Login = () => {
         .required('Password is required'),
     }),
     onSubmit: async (values, { setSubmitting, setStatus }) => {
+      if (inFlightRef.current) return
+      inFlightRef.current = true
       try {
         const data = await postJson('login', values)
+
         if (!data) throw new Error('Login failed: empty response')
 
         // backend /login currently returns only { token }.
@@ -66,7 +72,9 @@ const Login = () => {
         setStatus({ error: getErrorMessage(error, 'Login failed.') })
       } finally {
         setSubmitting(false)
+        inFlightRef.current = false
       }
+
     },
   })
 
@@ -87,7 +95,7 @@ const Login = () => {
 
           <form onSubmit={formik.handleSubmit} className="space-y-6">
               {formik.status?.error && (
-                <p className="mt-2 text-xs text-red-400 text-center">{formik.status.error}</p>
+                <p className="mt-2 text-xs text-center text-red-400">{formik.status.error}</p>
               )}
             <div>
               <label className="block text-white/60 text-xs tracking-[0.2em] uppercase mb-3">
@@ -124,7 +132,7 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword((s) => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white transition"
+                  className="absolute transition -translate-y-1/2 right-3 top-1/2 text-white/70 hover:text-white"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`} />
@@ -138,14 +146,14 @@ const Login = () => {
 
             <button
               type="submit"
-              disabled={formik.isSubmitting}
+              disabled={formik.isSubmitting || inFlightRef.current}
               className="w-full bg-[#C9A961] text-black py-4 text-xs tracking-[0.3em] uppercase hover:bg-[#B89851] transition mt-2 disabled:opacity-60"
             >
               {formik.isSubmitting ? 'Entering...' : 'Enter'}
             </button>
           </form>
 
-          <div className="pt-6 mt-8 text-center border-t border-white/10 space-y-3">
+          <div className="pt-6 mt-8 space-y-3 text-center border-t border-white/10">
             <p className="text-xs text-white/60">
               New client?
               <Link to="/register" className="text-[#C9A961] hover:text-white transition ml-2">
