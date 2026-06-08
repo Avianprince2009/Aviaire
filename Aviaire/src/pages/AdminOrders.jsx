@@ -14,16 +14,26 @@ function formatMoney(amountKobo, currency = 'NGN') {
   const amount = Number(amountKobo || 0)
   if (!Number.isFinite(amount)) return '0'
   const naira = amount / 100
+
+  // AdminOrders: user requested to show only "" (no $/$₦ prefix/symbol).
+  // Keep number formatting but strip currency symbols.
   try {
-    return new Intl.NumberFormat(undefined, {
+    const formatted = new Intl.NumberFormat(undefined, {
       style: 'currency',
       currency,
       maximumFractionDigits: 2,
     }).format(naira)
+
+    // Remove common currency symbols including "₦" and "$".
+    // Keep thousands separators and decimals.
+    const stripped = formatted.replace(/[$₦]/g, '').trim()
+    return stripped || '0'
   } catch {
-    return `₦${naira.toLocaleString()}`
+    // Fallback: just return a plain number string
+    return naira.toLocaleString(undefined, { maximumFractionDigits: 2 })
   }
 }
+
 
 function getOrderCustomerFields(order) {
   const s = order?.shipping || {}
