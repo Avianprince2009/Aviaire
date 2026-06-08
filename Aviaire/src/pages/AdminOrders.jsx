@@ -272,7 +272,7 @@ const AdminOrders = () => {
           <div className='bg-zinc-900/40 backdrop-blur-xl border border-[#c9a961]/15 p-5 rounded-xl sm:col-span-2 lg:col-span-1'>
             <div className='text-xs tracking-widest uppercase text-zinc-500'>Total Revenue</div>
             <div className='max-w-full mt-2 text-3xl font-light break-words sm:text-4xl'>
-              ${formatMoney(stats.totalRevenueKobo).replace('₦', '').trim()}
+              {formatMoney(stats.totalRevenueKobo)}
             </div>
           </div>
           <div className='bg-zinc-900/40 backdrop-blur-xl border border-[#c9a961]/15 p-5 rounded-xl'>
